@@ -43,6 +43,20 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    * and how to finish reading the last bytes of the ciphertext.
    */
 
+   /*
+   int fout;
+   char *decrypted_data = NULL;
+   int length = 5;
+   if ((fout = open(ptxt_fname, O_WRONLY)) == -1)
+     {
+        printf("Error Opening Outfile");
+        exit(0);
+     }
+   write(fout, decrypted_data, len);
+   */    
+   
+       
+   
   /* first, read X_len */
 
   /* now we read X */
@@ -87,6 +101,7 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
   /* before the end, don't forget to wipe out the variables that were used 
    * to hold sensitive information, such as the symmetric keys for AES and
    * HSHA-1 */
+   
 }
 
 void 

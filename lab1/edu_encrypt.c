@@ -66,11 +66,51 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
    *
    ***************************************************************************/
 
+   char *data, *enc_data;
+   int len = 0, fout;
+   
+   /*find total size of file and store it into array*/
+   len = lseek(fin, 0, SEEK_END);
+   if (len < 0)
+     {
+        printf("File size is %d", len);
+        exit(0);
+     }
+              
+   data = (char *) malloc(len*sizeof(char));
+   lseek(fin, 0, SEEK_SET);
+   if (read(fin, data, len) <= 0)
+     {
+        printf("Error Reading file!");
+        exit(0);
+     }
+   
+   close(fin);
+   /* print file contents */
+   printf("%s", data);
+   
+   
+   enc_data = data;
+   if ((fout = open(ctxt_fname, O_WRONLY)) == -1)
+     {
+        printf("Error creating output file!");
+        exit(0);
+     }
+   if (write(fout, enc_data, len) <= 0)
+     {
+        printf("Error Writing Encrpted Output!");
+        exit(0);
+     }
+   
+   close(fout);
+   /* print encrypted data */
+   printf("%s", enc_data);
+   
   /* Create the ciphertext file---the content will be encrypted, 
    * so it can be world-readable! */
 
   /* initialize the pseudorandom generator */
-
+   
   /* Pick two random keys */
 
   /* use the first key for the CBC-AES encryption ...*/
