@@ -89,28 +89,24 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
    /* print file contents */
    printf("%s", data);
    
-   
-   enc_data = data;
-   if ((fout = open(ctxt_fname, O_WRONLY)) == -1)
-     {
-        printf("Error creating output file!");
-        exit(0);
-     }
-   if (write(fout, enc_data, len) <= 0)
-     {
-        printf("Error Writing Encrpted Output!");
-        exit(0);
-     }
-   
-   close(fout);
-   /* print encrypted data */
-   printf("%s", enc_data);
-   
+    
   /* Create the ciphertext file---the content will be encrypted, 
    * so it can be world-readable! */
 
   /* initialize the pseudorandom generator */
-   
+  
+   int seed_size = 128/8; /* 128 bits */
+   char *seed = (char *) malloc(seed_size * sizeof(char));
+   fin = open("/dev/random", O_RDONLY);
+   if(read(fin, seed, seed_size) <= 0)
+     {
+        printf("Error, Reading Random file!");
+        exit(0);
+     }
+   printf("read the random seed: %s", seed);
+   close(fin);
+   prng_seed(seed, seed_size);
+  
   /* Pick two random keys */
 
   /* use the first key for the CBC-AES encryption ...*/
@@ -146,6 +142,24 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
   /* before the end, don't forget to wipe out the variables that were used 
    * to hold sensitive information, such as the symmetric keys for AES and
    * HSHA-1 */
+   
+   
+   enc_data = data;
+   if ((fout = open(ctxt_fname, O_WRONLY)) == -1)
+     {
+        printf("Error creating output file!");
+        exit(0);
+     }
+   if (write(fout, enc_data, len) <= 0)
+     {
+        printf("Error Writing Encrpted Output!");
+        exit(0);
+     }
+   
+   close(fout);
+   /* print encrypted data */
+   printf("%s", enc_data);
+  
 }
 
 void 
