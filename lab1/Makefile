@@ -1,7 +1,7 @@
 # Compiler, flags, etc.
 CC = gcc
 DEBUG = -g -O2
-WFLAGS = -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror
+WFLAGS = -ansi -Wall -Wsign-compare -Wchar-subscripts #-Werror
 LDFLAGS = -Wl,-rpath,/usr/local/lib
 
 # Libraries against which the object file for each utility should be linked

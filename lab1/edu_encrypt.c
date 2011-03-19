@@ -70,6 +70,7 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
    int len = 0, fout;
    
    /*find total size of file and store it into array*/
+/*
    len = lseek(fin, 0, SEEK_END);
    if (len < 0)
      {
@@ -86,12 +87,18 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
      }
    
    close(fin);
+ * /
    /* print file contents */
    printf("%s", data);
    
     
   /* Create the ciphertext file---the content will be encrypted, 
    * so it can be world-readable! */
+   if ((fout = open(ctxt_fname, O_WRONLY)) == -1)
+     {
+        printf("Error creating output file!");
+        exit(0);
+     }
 
   /* initialize the pseudorandom generator */
   
@@ -108,18 +115,41 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
    prng_seed(seed, seed_size);
   
   /* Pick two random keys */
+   u_int64_t* AESkey = (u_int64_t*) malloc(sizeof(u_int64_t));
+   u_int64_t* SHA1key = (u_int64_t*) malloc(sizeof(u_int64_t));
+   int keylength = sizeof(u_int64_t);
+   *AESkey = prng_gethyper();
+   *SHA1key = prng_gethyper();
 
   /* use the first key for the CBC-AES encryption ...*/
 
   /* ... and the second part for the HMAC-SHA1 */
 
-  /* Encrypt both keys under the pulic key pk */
-
-  /* Let's start writing the ciphertext */
-  /* First, prepend the length of the ciphertext computed above; */
-
+  /* Encrypt both keys under the public key pk */
+   char * AESchar = armor64(AESkey, keylength);
+   char * SHA1char = armor64(SHA1key, keylength);
+   char *AESenc = dcencrypt(pk, AESchar);
+   char *SHA1enc = dcencrypt(pk, SHA1char);
+   char *fullkey = (char *) malloc ((armor64len(AESchar)+armor64len(SHA1char)+1)*sizeof(char));
+   printf("AESkey is %s\n", AESchar);
+   printf("SHA1char is %s\n", SHA1char);
+   strcpy(fullkey, AESchar);
+   strcat(fullkey, SHA1char);
+   printf("the full key is %s\n", fullkey);
+   
+   char *enckey = dcencrypt(pk, fullkey);
+   int enckeylen = strlen(enckey);
+   printf("the encrypted full key is %s\n", enckey);
+   printf("the legnth of full key is %d\n", enckeylen);
+   
+    /* Let's start writing the ciphertext */
+  /* First, prepend the length of the ciphertext computed above; */  
+   write(fout, &enckeylen, sizeof(int) );
+   
+   
   /* then, write the ciphertext that encapsulates the two keys */
-
+   write(fout, enckey, enckeylen);
+   
   /* Now start processing the actual file content using symmetric encryption */
   /* Remember that CBC-mode needs a random IV (Initialization Vector) */
 
@@ -128,7 +158,9 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
   /* CBC (Cipher-Block Chaining)---Encryption
    * xor the previous ciphertext's block with the next plaintext's block;
    * then encrypt it with AES and write the resulting block */
-  
+  int blocksize = 128/8 /* 128 bits */
+  data = (char *) malloc(blocksize*sizeof(char)); 
+   
   /* Don't forget to pad the last block with trailing zeroes */
 
   /* write the last chunk */
@@ -142,23 +174,10 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
   /* before the end, don't forget to wipe out the variables that were used 
    * to hold sensitive information, such as the symmetric keys for AES and
    * HSHA-1 */
-   
-   
-   enc_data = data;
-   if ((fout = open(ctxt_fname, O_WRONLY)) == -1)
-     {
-        printf("Error creating output file!");
-        exit(0);
-     }
-   if (write(fout, enc_data, len) <= 0)
-     {
-        printf("Error Writing Encrpted Output!");
-        exit(0);
-     }
-   
+     
    close(fout);
    /* print encrypted data */
-   printf("%s", enc_data);
+   /* printf("%s", enc_data); */
   
 }
 
