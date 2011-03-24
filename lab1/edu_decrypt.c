@@ -42,29 +42,31 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    * will encounter the end-of-file, at which point we will know where Y ends,
    * and how to finish reading the last bytes of the ciphertext.
    */
-
-   /*
-   int fout;
-   char *decrypted_data = NULL;
-   int length = 5;
-   if ((fout = open(ptxt_fname, O_WRONLY)) == -1)
-     {
-        printf("Error Opening Outfile");
-        exit(0);
-     }
-   write(fout, decrypted_data, len);
-   */    
-   
-       
-   
-  /* first, read X_len */
-
-  /* now we read X */
-
-  /* Decrypt this header to recover the symmetric keys K_AES and K_HSHA-1 */
  
+          
+  /* first, read X_len */
+   int x_lensize=2;
+   char* x_len = (char*) malloc(x_lensize*sizeof(char));
+   read(fin, x_len, x_lensize*sizeof(char));
+   printf("Read for xlen: %s\n", x_len);
+   u_int32_t x_int_size = getint(x_len);
+   printf("the xlenint is: %d\n", x_int_size);
+   
+   
+  /* now we read X */
+   char *x = (char*) malloc(x_int_size * sizeof(char));
+   read(fin, x, x_int_size*sizeof(char));
+   printf("read for xvalue: %s\n", x);
+  
+   /* Decrypt this header to recover the symmetric keys K_AES and K_HSHA-1 */
+   char *fullkey;
+   fullkey = dcdecrypt(sk, x);
+   
+   char  *K_AES, *K_SHA1; 
+   
   /* use the first symmetric key for the CBC-AES decryption ...*/
   /* ... and the second for the HMAC-SHA1 */
+   
 
   /* Reading Y */
   /* First, read the IV (Initialization Vector) */

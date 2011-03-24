@@ -66,107 +66,88 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
    *
    ***************************************************************************/
 
-   char *data, *enc_data;
-   int len = 0, fout;
-   
-   /*find total size of file and store it into array*/
-/*
-   len = lseek(fin, 0, SEEK_END);
-   if (len < 0)
-     {
-        printf("File size is %d", len);
-        exit(0);
-     }
-              
-   data = (char *) malloc(len*sizeof(char));
-   lseek(fin, 0, SEEK_SET);
-   if (read(fin, data, len) <= 0)
-     {
-        printf("Error Reading file!");
-        exit(0);
-     }
-   
-   close(fin);
- * /
-   /* print file contents */
-   printf("%s", data);
-   
-    
+   int fout, finr;
   /* Create the ciphertext file---the content will be encrypted, 
    * so it can be world-readable! */
-   if ((fout = open(ctxt_fname, O_WRONLY)) == -1)
+   if ((fout = open(ctxt_fname, O_WRONLY | O_TRUNC | O_CREAT, 0777)) == -1)
      {
         printf("Error creating output file!");
         exit(0);
      }
 
   /* initialize the pseudorandom generator */
-  
-   int seed_size = 128/8; /* 128 bits */
+   const int seed_size = 128/8;
    char *seed = (char *) malloc(seed_size * sizeof(char));
-   fin = open("/dev/random", O_RDONLY);
+   finr = open("/dev/random", O_RDONLY);
    if(read(fin, seed, seed_size) <= 0)
      {
         printf("Error, Reading Random file!");
         exit(0);
      }
-   printf("read the random seed: %s", seed);
-   close(fin);
+   close(finr);
+   printf("read the random seed: %s\n", seed); /*testcode*/
    prng_seed(seed, seed_size);
-  
+ 
   /* Pick two random keys */
-   /*
-   u_int64_t* AESkey = (u_int64_t*) malloc(sizeof(u_int64_t));
-   u_int64_t* SHA1key = (u_int64_t*) malloc(sizeof(u_int64_t));
-   int keylength = sizeof(u_int64_t);
-   *AESkey = prng_gethyper();
-   *SHA1key = prng_gethyper();
-  */
    u_int64_t AESkey, SHA1key;
    AESkey = prng_gethyper();
    SHA1key = prng_gethyper();
+   printf("The AES key is: %d\n", AESkey);
+   printf("The SHA1 key is %d\n", SHA1key);   
+  
+   char *AESchar, *SHA1char;
+   AESchar = (char*) malloc (seed_size*sizeof(char));
+   SHA1char = (char*) malloc (seed_size*sizeof(char));
+   puthyper(AESchar, AESkey);
+   puthyper(SHA1char, SHA1key);
    
+   printf("The AESchar is: %s\n", AESchar);
+   printf("The SHA1char is: %s\n", SHA1char);
+
   /* use the first key for the CBC-AES encryption ...*/
-
-  /* ... and the second part for the HMAC-SHA1 */
-
+  /* ... and the second part for the HMAC-SHA1 */\
   /* Encrypt both keys under the public key pk */
-   /*
-   char * AESchar = armor64(AESkey, keylength);
-   char * SHA1char = armor64(SHA1key, keylength);
-   */
-   char *AEStest = (char *) malloc(16*sizeof(char)); 
-   char *SHA1test = (char *) malloc(16*sizeof(char));
-   puthyper(AEStest, AESkey);
-   puthyper(SHA1test, SHA1key);
-   printf("the key before padding is %s", AEStest);
-   char * AESchar = armor64(AEStest, 16);
-   char * SHA1char = armor64(SHA1test, 16);
-   /*
-   char *AESenc = dcencrypt(pk, AESchar);
-   char *SHA1enc = dcencrypt(pk, SHA1char);
-   */
-   char *fullkey = (char *) malloc ((armor64len(AESchar)+armor64len(SHA1char)+16)*sizeof(char));
-   printf("AESkey is %s\n", AESchar);
-   printf("SHA1char is %s\n", SHA1char);
-   strcpy(fullkey, AESchar);
-   strcat(fullkey, SHA1char);
-   printf("the full key is %s\n", fullkey);
+
+   char *armorAES, *armorSHA1;
+   armorAES = armor64(AESchar, seed_size);
+   armorSHA1 = armor64(SHA1char, seed_size);
    
+   printf("The armoredAES is: %s\n", armorAES);
+   printf("The armoredSHA1 is: %s\n", armorSHA1);
+
+   char *fullkey;
+   fullkey = (char *) malloc (4*seed_size*sizeof(char));
+   strcpy(fullkey, armorAES);
+   printf("The fullkey with armorAES is now: %s\n", fullkey);
+
+   strcat(fullkey, armorSHA1);
+   printf("the fullkey with sha1 appended is now: %s\n", fullkey);
+   
+   
+/*HELP*/   
    char *enckey = dcencrypt(pk, fullkey);
-   int enckeylen = strlen(enckey);
+   int keylenbytes = 2;
+   
+   u_int32_t enckeyint = (u_int32_t) strlen(enckey);
    printf("the encrypted full key is %s\n", enckey);
-   printf("the legnth of full key is %d\n", enckeylen);
+   printf("the length of full key is %d\n", enckeyint);
+
+   char *enclen;
+   enclen = (char *) malloc(keylenbytes*sizeof(char));
+   putint(enclen, enckeyint);
    
-    /* Let's start writing the ciphertext */
-  /* First, prepend the length of the ciphertext computed above; */  
-   write(fout, &enckeylen, sizeof(int) );
-   
+   printf("the length converted to char is: %s\n", enclen);
+   printf("the bytelen after conversion is: %d\n", getint(enclen));
+    
+   write(fout, enclen, keylenbytes*sizeof(char) );
    
   /* then, write the ciphertext that encapsulates the two keys */
-   write(fout, enckey, enckeylen);
+
+  write(fout, enckey, enckeyint);
   printf("successfully wrote the fullkey"); 
-  /* Now start processing the actual file content using symmetric encryption */
+
+   
+ /* Now start processing the actual file content using symmetric encryption */
   /* Remember that CBC-mode needs a random IV (Initialization Vector) */
 
   /* Compute the HSHA-1 mac while you go */
@@ -174,55 +155,74 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
   /* CBC (Cipher-Block Chaining)---Encryption
    * xor the previous ciphertext's block with the next plaintext's block;
    * then encrypt it with AES and write the resulting block */
-   
-   int blocksize = 128/8; /* 128 bits */
-  data = (char *) malloc(blocksize*sizeof(char));
+   char *data;
+   int blocksize = 128/8; 
+   data = (char *) malloc(blocksize*sizeof(char));
    char *encdata = (char *) malloc(blocksize*sizeof(char));
    aes_ctx* aes = (aes_ctx*) malloc (sizeof(aes_ctx));
-   aes_setkey(aes,AESchar,armor64len(AESchar) );
+   aes_setkey(aes,armorAES,armor64len(armorAES));
+   printf("initialized AEs with key length %d\n", armor64len(armorAES));
    
    sha1_ctx sc;
-   hmac_sha1_init(SHA1char, armor64len(SHA1char), &sc);
+   hmac_sha1_init(armorSHA1, armor64len(armorSHA1), &sc);
+   printf("initialized sha1 with key length %d\n", armor64len(armorSHA1));
    
    /* create initialization vector */
+   
    char* ciphertext = (char*) malloc(blocksize*sizeof(char));
    prng_getbytes(ciphertext, blocksize);
    int bytesread = 0;
+   printf("initialization vector is: %s", ciphertext);
+
    while((bytesread = read(fin, data, blocksize)) == blocksize)
      {
-        encdata = *ciphertext ^ *data;
+        printf("just read %d bytes\n", bytesread);
+        printf("just read this block: %s\n", data);
+      
+        *encdata = (*ciphertext) ^ (*data);
+        printf("just did the xor and its value is: %s\n", encdata);
         aes_encrypt(aes,ciphertext,encdata);
+        printf("just did the aes and and the result is: %s\n", ciphertext);
         hmac_sha1_update(&sc, ciphertext, blocksize);
+        printf("performed sha1 update\n");
      }
          
   /* Don't forget to pad the last block with trailing zeroes */
 
     /* pad last block */
    int padlen = 0;
-   char *paddedblock = armor64(data, bytesread);
-   dearmor64(&padlen, paddedblock);
-   encdata = *ciphertext ^ *paddedblock;
-   aes_encrypt(aes, ciphertext,encdata);
-  
+   if ((bytesread < blocksize) && (bytesread >0))
+     {       
+        char *paddedblock = armor64(data, bytesread);
+        dearmor64(&padlen, paddedblock);
+        *encdata = (*ciphertext) ^ (*paddedblock);
+        aes_encrypt(aes, ciphertext,encdata);
+     }
+   
   /* write the last chunk */
-    write(fout, ciphertext, blocksize);
+    write(fout, ciphertext, blocksize*sizeof(char));
+   
   /* Finish up computing the HSHA-1 mac and write the 20-byte mac after
    * the last chunk of the CBC ciphertext */
+   
    int hmaclen = 20;
    char *hmac_out = (char *) malloc(hmaclen*sizeof(char));
-   hmac_sha1_final(SHA1char, armor64len(SHA1char), &sc, hmac_out);
-  /* Remember to write a byte at the end specifying how many trailing zeroes
+   hmac_sha1_final(armorSHA1, armor64len(armorSHA1), &sc, hmac_out);
+   write(fout, hmac_out, hmaclen*sizeof(char));
+   printf("the hmac was: %s", hmac_out);
+   /* Remember to write a byte at the end specifying how many trailing zeroes
    * (possibly none) were added */
 
    write(fout, &padlen, sizeof(int));
   /* before the end, don't forget to wipe out the variables that were used 
    * to hold sensitive information, such as the symmetric keys for AES and
    * HSHA-1 */
-     aes_clrkey(aes);
+  
+   aes_clrkey(aes);
    close(fout);
    /* print encrypted data */
-   /* printf("%s", enc_data); */
-  
+   printf("The Final Encrypted data is: %s", encdata); 
+ 
 }
 
 void 
