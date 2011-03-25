@@ -50,17 +50,17 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    short x_len;
    read(fin, &x_len, x_lensize*sizeof(char));
 
-   /*
+   
    printf("Read for xlen: %d\n", x_len);
-   */
+   
    
    /* now we read X */
    char x[x_len];
    read(fin, x, x_len);
-   /*
+   
    printf("read for xvalue: %s\n", x);
    
-    */
+    
    /* Decrypt this header to recover the symmetric keys K_AES and K_HSHA-1 */
    char *fullkey;
    fullkey = dcdecrypt(sk, x);
@@ -75,11 +75,12 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    printf("The key size is calculated to be: %d\n", key_size);
    */
    
-   char  K_AES[key_size], K_SHA1[key_size]; 
+   char  K_AES[key_size+1], K_SHA1[key_size]; 
 
    strncpy(K_AES, fullkey, key_size);
+   K_AES[key_size]='\0';
    printf("The armored AES key is: %s\n", K_AES);
-
+   
    strcpy(K_SHA1, fullkey+key_size);
    printf("The armored SHA1key is: %s\n", K_SHA1);
    
@@ -93,15 +94,16 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
   /* Reading Y */
   /* First, read the IV (Initialization Vector) */
    int blocksize=128/8;
-   char prev_block[blocksize], cur_block[blocksize], decdata[blocksize], plaintxt[blocksize];
+   char prev_block[blocksize+1], cur_block[blocksize+1], decdata[blocksize+1], plaintxt[blocksize+1];
    read(fin, prev_block, blocksize);
+   prev_block[blocksize] = '\0';
    printf("the initialization vector is: %s\n", prev_block);
    hmac_sha1_update(&sc, prev_block, blocksize);
   /* compute the HMAC-SHA1 as you go */
 
   /* Create plaintext file---may be confidential info, so permission is 0600 */
    int fout;
-   if (fout = open(ptxt_fname, O_WRONLY | O_TRUNC | O_CREAT, 0600) == -1)
+   if ((fout = open(ptxt_fname, O_WRONLY | O_TRUNC | O_CREAT, 0600)) == -1)
      {
         printf("Error Creating Output file!");
         exit(0);
@@ -112,32 +114,64 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    */
    
    /*calculate length of ciphertext since we know hmac + pad =21*/
-   int cursor = x_len + x_lensize;
-   int end = lseek(fin, 0, SEEK_END);
-   int y_len = end - cursor;
-   int y_read = 0;
-   lseek(fin, cursor, SEEK_SET);
+
+   int cursor = lseek(fin, 0, SEEK_CUR);
+   printf("The cursor is at: %d\n", cursor);
    
+   int end = lseek(fin, 0, SEEK_END);
+   printf("The end of file is at: %d\n", end);
+    
+   int hmaclen = 20;
+   int paddingsize = 1;
+   int y_len = end - cursor - hmaclen - paddingsize;
+   int y_read = 0;
+   
+   int current =lseek(fin, cursor, SEEK_SET);
+   printf("we are currently at: %d\n", current);
    
    int bytes_read = 0;
    int i =0;
-   while(y_read < y_len)
+   while (y_read < y_len)
      {
-        y_read += read(fin, cur_block, blocksize);
+        bytes_read = read(fin, cur_block, blocksize);
+        cur_block[blocksize] = '\0';
+        
+        y_read +=bytes_read;
         printf("just read %s\n", cur_block);
         printf("read %d out of %d", y_read, y_len);
+        hmac_sha1_update(&sc, cur_block, blocksize);
         aes_decrypt(&aes, decdata, cur_block);
+        decdata[blocksize] = '\0';
         printf("decrypted block is: %s\n", decdata);
         for (i = 0; i<blocksize; i++)
           {
              plaintxt[i]=decdata[i] ^ prev_block[i];
           }
-        
+        plaintxt[blocksize] ='\0';
         printf("result of the xor is: %s\n", plaintxt);
-        write(fout,plaintxt, blocksize);        
+        write(fout,plaintxt, blocksize*sizeof(char));
+      
      }
+   printf("out of while loop now after reading %d bytes in last block\n", bytes_read);
+   /*now we need to decrypt the last block
+   lets read the hmac and the paddingn and unpad the last block
+   */
+  
+ 
+   char hmac[hmaclen+1], verhmac[hmaclen];
+   char padding;
+   read(fin, hmac, hmaclen);
+   read(fin, padding, sizeof(char));
+   hmac[hmaclen] = '\0';
+   printf("the actual hmac is: %s\n", hmac);
+   hmac_sha1_final(K_SHA1, key_size, &sc, verhmac);
+   printf("the calculated hmac is: %s\n", verhmac);
    
-
+   printf("the padding is: %s\n", padding);
+   int pad = (int) padding;
+   printf("the pad in int is %d\n", pad);
+   
+   
   /* Recall that we are reading sha_hashsize + 2 bytes ahead: now that 
    * we just consumed aes_blocklen bytes from the front of the buffer, we
    * shift the unused sha_hashsize + 2 bytes left by aes_blocklen bytes 
