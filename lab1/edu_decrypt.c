@@ -50,30 +50,33 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    short x_len;
    read(fin, &x_len, x_lensize*sizeof(char));
 
+   /*
    printf("Read for xlen: %d\n", x_len);
-/*
-   short x_int_size = getint(x_len);
-
-  printf("the xlenint is: %d\n", x_int_size);
-    
+   */
+   
    /* now we read X */
    char x[x_len];
    read(fin, x, x_len);
+   /*
    printf("read for xvalue: %s\n", x);
-  
+   
+    */
    /* Decrypt this header to recover the symmetric keys K_AES and K_HSHA-1 */
    char *fullkey;
    fullkey = dcdecrypt(sk, x);
-   printf("the fullkey after dcdecrypt is: %s\n", fullkey);
-
-   int key_size = strlen(fullkey)/2;
-   printf("The key size is calculated to be: %d\n", key_size);
-   char  K_AES[key_size], K_SHA1[key_size]; 
-/*
    
-   K_AES = (char*) malloc(key_size*sizeof(char) +1);
-   K_SHA1 = (char*) malloc(key_size*sizeof(char) +1);
-*/
+   /*
+   printf("the fullkey after dcdecrypt is: %s\n", fullkey);
+   */
+   
+   int key_size = strlen(fullkey)/2;
+   
+   /*
+   printf("The key size is calculated to be: %d\n", key_size);
+   */
+   
+   char  K_AES[key_size], K_SHA1[key_size]; 
+
    strncpy(K_AES, fullkey, key_size);
    printf("The armored AES key is: %s\n", K_AES);
 
@@ -82,21 +85,58 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    
   /* use the first symmetric key for the CBC-AES decryption ...*/
   /* ... and the second for the HMAC-SHA1 */
-   
+   aes_ctx aes;
+   aes_setkey(&aes, K_AES, key_size);
+   sha1_ctx sc;
+   hmac_sha1_init(K_SHA1, key_size, &sc);
 
   /* Reading Y */
   /* First, read the IV (Initialization Vector) */
-
-   
+   int blocksize=128/8;
+   char prev_block[blocksize], cur_block[blocksize], decdata[blocksize], plaintxt[blocksize];
+   read(fin, prev_block, blocksize);
+   printf("the initialization vector is: %s\n", prev_block);
+   hmac_sha1_update(&sc, prev_block, blocksize);
   /* compute the HMAC-SHA1 as you go */
 
   /* Create plaintext file---may be confidential info, so permission is 0600 */
-
-   
+   int fout;
+   if (fout = open(ptxt_fname, O_WRONLY | O_TRUNC | O_CREAT, 0600) == -1)
+     {
+        printf("Error Creating Output file!");
+        exit(0);
+     }
    
   /* CBC (Cipher-Block Chaining)---Decryption
    * decrypt the current block and xor it with the previous one 
    */
+   
+   /*calculate length of ciphertext since we know hmac + pad =21*/
+   int cursor = x_len + x_lensize;
+   int end = lseek(fin, 0, SEEK_END);
+   int y_len = end - cursor;
+   int y_read = 0;
+   lseek(fin, cursor, SEEK_SET);
+   
+   
+   int bytes_read = 0;
+   int i =0;
+   while(y_read < y_len)
+     {
+        y_read += read(fin, cur_block, blocksize);
+        printf("just read %s\n", cur_block);
+        printf("read %d out of %d", y_read, y_len);
+        aes_decrypt(&aes, decdata, cur_block);
+        printf("decrypted block is: %s\n", decdata);
+        for (i = 0; i<blocksize; i++)
+          {
+             plaintxt[i]=decdata[i] ^ prev_block[i];
+          }
+        
+        printf("result of the xor is: %s\n", plaintxt);
+        write(fout,plaintxt, blocksize);        
+     }
+   
 
   /* Recall that we are reading sha_hashsize + 2 bytes ahead: now that 
    * we just consumed aes_blocklen bytes from the front of the buffer, we
@@ -122,7 +162,8 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
   /* before the end, don't forget to wipe out the variables that were used 
    * to hold sensitive information, such as the symmetric keys for AES and
    * HSHA-1 */
-   
+   aes_clrkey(&aes);
+   close(fout);
 }
 
 void 
