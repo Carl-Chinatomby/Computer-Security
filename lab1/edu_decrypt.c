@@ -45,24 +45,40 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
  
           
   /* first, read X_len */
+
    int x_lensize=2;
-   char* x_len = (char*) malloc(x_lensize*sizeof(char));
-   read(fin, x_len, x_lensize*sizeof(char));
-   printf("Read for xlen: %s\n", x_len);
-   u_int32_t x_int_size = getint(x_len);
-   printf("the xlenint is: %d\n", x_int_size);
-   
-   
-  /* now we read X */
-   char *x = (char*) malloc(x_int_size * sizeof(char));
-   read(fin, x, x_int_size*sizeof(char));
+   short x_len;
+   read(fin, &x_len, x_lensize*sizeof(char));
+
+   printf("Read for xlen: %d\n", x_len);
+/*
+   short x_int_size = getint(x_len);
+
+  printf("the xlenint is: %d\n", x_int_size);
+    
+   /* now we read X */
+   char x[x_len];
+   read(fin, x, x_len);
    printf("read for xvalue: %s\n", x);
   
    /* Decrypt this header to recover the symmetric keys K_AES and K_HSHA-1 */
    char *fullkey;
    fullkey = dcdecrypt(sk, x);
+   printf("the fullkey after dcdecrypt is: %s\n", fullkey);
+
+   int key_size = strlen(fullkey)/2;
+   printf("The key size is calculated to be: %d\n", key_size);
+   char  K_AES[key_size], K_SHA1[key_size]; 
+/*
    
-   char  *K_AES, *K_SHA1; 
+   K_AES = (char*) malloc(key_size*sizeof(char) +1);
+   K_SHA1 = (char*) malloc(key_size*sizeof(char) +1);
+*/
+   strncpy(K_AES, fullkey, key_size);
+   printf("The armored AES key is: %s\n", K_AES);
+
+   strcpy(K_SHA1, fullkey+key_size);
+   printf("The armored SHA1key is: %s\n", K_SHA1);
    
   /* use the first symmetric key for the CBC-AES decryption ...*/
   /* ... and the second for the HMAC-SHA1 */
@@ -71,10 +87,13 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
   /* Reading Y */
   /* First, read the IV (Initialization Vector) */
 
+   
   /* compute the HMAC-SHA1 as you go */
 
   /* Create plaintext file---may be confidential info, so permission is 0600 */
 
+   
+   
   /* CBC (Cipher-Block Chaining)---Decryption
    * decrypt the current block and xor it with the previous one 
    */
