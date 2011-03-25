@@ -178,7 +178,7 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
    int bytesread = 0;
    
    
-   printf("initialization vector is: %s", ciphertext);
+   printf("initialization vector is: %s\n", ciphertext);
    
    /*write initialization vector */
     write(fout, ciphertext, blocksize*sizeof(char));
@@ -196,7 +196,7 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
         data[blocksize]='\0';
         printf("just read %d bytes\n", bytesread);
         printf("just read this block: %s\n", data);
-      
+        printf("the current ciphertext is %s\n", ciphertext);
         for (i=0; i<blocksize; i++)
           {
              encdata[i] = ciphertext[i] ^ data[i];
@@ -231,8 +231,9 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
              encdata[i] = ciphertext[i] ^ data[i];
              
           }
+        printf("the xor on the last block is: %s\n", encdata);
         aes_encrypt(&aes, ciphertext,encdata);
-        
+        printf("the last block encrpted is: %s\n", ciphertext);
         write(fout, ciphertext, blocksize*sizeof(char));
         hmac_sha1_update(&sc, ciphertext, blocksize );
      }
@@ -251,11 +252,13 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
    /* Remember to write a byte at the end specifying how many trailing zeroes
    * (possibly none) were added */
 
-   printf("the paddlength is: %d\n", padlen);
+   printf("the paddlength is: %s\n", &padlen);
     int padint = (int) padlen;
    printf("the padding int is: %d\n", padint);
-   write(fout, &padlen, sizeof(char));
-  /* before the end, don't forget to wipe out the variables that were used 
+   int bytes_wrote;
+   bytes_wrote = write(fout, padlen, sizeof(char));
+  printf("successfully wrote %d bytes for padding\n", bytes_wrote);
+   /* before the end, don't forget to wipe out the variables that were used 
    * to hold sensitive information, such as the symmetric keys for AES and
    * HSHA-1 */
   

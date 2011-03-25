@@ -131,7 +131,7 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    
    int bytes_read = 0;
    int i =0;
-   while (y_read < y_len)
+   while (y_read < y_len )
      {
         bytes_read = read(fin, cur_block, blocksize);
         cur_block[blocksize] = '\0';
@@ -143,25 +143,49 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
         aes_decrypt(&aes, decdata, cur_block);
         decdata[blocksize] = '\0';
         printf("decrypted block is: %s\n", decdata);
-        for (i = 0; i<blocksize; i++)
-          {
-             plaintxt[i]=decdata[i] ^ prev_block[i];
-          }
-        plaintxt[blocksize] ='\0';
+        
+          
+             
+             for (i = 0; i<blocksize; i++)
+               {
+                  plaintxt[i]=decdata[i] ^ prev_block[i];
+               }
+             
+             strcpy(prev_block, cur_block);
         printf("result of the xor is: %s\n", plaintxt);
-        write(fout,plaintxt, blocksize*sizeof(char));
+        if (y_read < y_len)
+          {
+             plaintxt[blocksize] ='\0';
+             write(fout,plaintxt, blocksize*sizeof(char));
+             printf("just wrote because the y_read!=y_len\n");
+          }
+        
+        
       
      }
    printf("out of while loop now after reading %d bytes in last block\n", bytes_read);
    /*now we need to decrypt the last block
-   lets read the hmac and the paddingn and unpad the last block
+   */
+    /*
+    lets read the hmac and the paddingn and unpad the last block
    */
   
  
    char hmac[hmaclen+1], verhmac[hmaclen];
    char padding;
-   read(fin, hmac, hmaclen);
-   read(fin, padding, sizeof(char));
+   bytes_read = read(fin, hmac, hmaclen);
+   printf("just read %d bytes for hmac\n", bytes_read);
+   bytes_read=read(fin, padding, sizeof(char));
+   printf("the result of the padding is %d bytes read\n", bytes_read);
+   /*
+   char remainder;
+   
+   bytes_read = read(fin,remainder, sizeof(char));
+   printf("we just read after the file: %s\n", remainder);
+   printf("that is a total of %d bytes\n", bytes_read);
+   int cast = (int) remainder;
+   printf("casted as an it that is %d\n", cast);
+   */
    hmac[hmaclen] = '\0';
    printf("the actual hmac is: %s\n", hmac);
    hmac_sha1_final(K_SHA1, key_size, &sc, verhmac);
@@ -170,7 +194,9 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    printf("the padding is: %s\n", padding);
    int pad = (int) padding;
    printf("the pad in int is %d\n", pad);
-   
+   /*upad last block*/
+   plaintxt[blocksize-pad] = '\0';
+   printf("The unpadded text now looks like: %s\n", plaintxt);
    
   /* Recall that we are reading sha_hashsize + 2 bytes ahead: now that 
    * we just consumed aes_blocklen bytes from the front of the buffer, we
@@ -179,6 +205,7 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
   
   /* write the decrypted chunk to the plaintext file */
 
+   write(fout,plaintxt, (blocksize)*sizeof(char));
   /* now we can finish computing the HMAC-SHA1 */
   
   /* compare the HMAC-SHA1 we computed with the value read from fin */
