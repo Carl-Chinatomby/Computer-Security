@@ -256,7 +256,7 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
     int padint = (int) padlen;
    printf("the padding int is: %d\n", padint);
    int bytes_wrote;
-   bytes_wrote = write(fout, padlen, sizeof(char));
+   bytes_wrote = write(fout, &padlen, sizeof(char));
   printf("successfully wrote %d bytes for padding\n", bytes_wrote);
    /* before the end, don't forget to wipe out the variables that were used 
    * to hold sensitive information, such as the symmetric keys for AES and

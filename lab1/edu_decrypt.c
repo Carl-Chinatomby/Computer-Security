@@ -175,7 +175,7 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    char padding;
    bytes_read = read(fin, hmac, hmaclen);
    printf("just read %d bytes for hmac\n", bytes_read);
-   bytes_read=read(fin, padding, sizeof(char));
+   bytes_read=read(fin, &padding, sizeof(char));
    printf("the result of the padding is %d bytes read\n", bytes_read);
    /*
    char remainder;
@@ -191,7 +191,7 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    hmac_sha1_final(K_SHA1, key_size, &sc, verhmac);
    printf("the calculated hmac is: %s\n", verhmac);
    
-   printf("the padding is: %s\n", padding);
+   printf("the padding is: %s\n", &padding);
    int pad = (int) padding;
    printf("the pad in int is %d\n", pad);
    /*upad last block*/
@@ -205,7 +205,7 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
   
   /* write the decrypted chunk to the plaintext file */
 
-   write(fout,plaintxt, (blocksize)*sizeof(char));
+   write(fout,plaintxt, (blocksize-pad)*sizeof(char));
   /* now we can finish computing the HMAC-SHA1 */
   
   /* compare the HMAC-SHA1 we computed with the value read from fin */
