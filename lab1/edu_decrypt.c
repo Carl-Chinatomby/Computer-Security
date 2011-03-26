@@ -75,13 +75,14 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    printf("The key size is calculated to be: %d\n", key_size);
    */
    
-   char  K_AES[key_size+1], K_SHA1[key_size]; 
+   char  K_AES[key_size+1], K_SHA1[key_size+1]; 
 
    strncpy(K_AES, fullkey, key_size);
    K_AES[key_size]='\0';
    printf("The armored AES key is: %s\n", K_AES);
    
-   strcpy(K_SHA1, fullkey+key_size);
+   strncpy(K_SHA1, fullkey+key_size, key_size);
+   K_SHA1[key_size]='\0';
    printf("The armored SHA1key is: %s\n", K_SHA1);
    
   /* use the first symmetric key for the CBC-AES decryption ...*/
@@ -96,9 +97,12 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    int blocksize=128/8;
    char prev_block[blocksize+1], cur_block[blocksize+1], decdata[blocksize+1], plaintxt[blocksize+1];
    read(fin, prev_block, blocksize);
+   
    prev_block[blocksize] = '\0';
-   printf("the initialization vector is: %s\n", prev_block);
+   /*
    hmac_sha1_update(&sc, prev_block, blocksize);
+   */
+   printf("the initialization vector is: %s\n", prev_block);
   /* compute the HMAC-SHA1 as you go */
 
   /* Create plaintext file---may be confidential info, so permission is 0600 */
@@ -134,12 +138,14 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    while (y_read < y_len )
      {
         bytes_read = read(fin, cur_block, blocksize);
+        
         cur_block[blocksize] = '\0';
+        hmac_sha1_update(&sc, cur_block, blocksize);
         
         y_read +=bytes_read;
         printf("just read %s\n", cur_block);
         printf("read %d out of %d", y_read, y_len);
-        hmac_sha1_update(&sc, cur_block, blocksize);
+      
         aes_decrypt(&aes, decdata, cur_block);
         decdata[blocksize] = '\0';
         printf("decrypted block is: %s\n", decdata);
@@ -152,6 +158,8 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
                }
              
              strcpy(prev_block, cur_block);
+        prev_block[blocksize]='\0';
+        
         printf("result of the xor is: %s\n", plaintxt);
         if (y_read < y_len)
           {
@@ -186,10 +194,12 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    int cast = (int) remainder;
    printf("casted as an it that is %d\n", cast);
    */
-   hmac[hmaclen] = '\0';
+   /*hmac[hmaclen] = '\0';*/
    printf("the actual hmac is: %s\n", hmac);
    hmac_sha1_final(K_SHA1, key_size, &sc, verhmac);
    printf("the calculated hmac is: %s\n", verhmac);
+   
+   
    
    printf("the padding is: %s\n", &padding);
    int pad = (int) padding;
@@ -214,6 +224,19 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    * that somebody tampered with the ciphertext file, and you should not
    * decrypt it.  Otherwise, the CCA-security is gone.
    */
+   
+   if (!strcmp(hmac, verhmac))
+     {
+        printf("Hmac verfication...passed\n");
+     }
+   else 
+     {
+        printf("HMAC verification...failed!\n destorying file\n");
+        close(fout);
+        fout = open(ptxt_fname, O_WRONLY | O_TRUNC | O_CREAT, 0600);
+ 
+     }
+
 
   /* write the last chunk of plaintext---remember to chop off the trailing
    * zeroes, (how many zeroes were added is specified by the last byte in 
@@ -223,6 +246,17 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
   /* before the end, don't forget to wipe out the variables that were used 
    * to hold sensitive information, such as the symmetric keys for AES and
    * HSHA-1 */
+
+   for (i=0;i<key_size+1; i++)
+     {
+        fullkey[i] = 0;
+        fullkey[i+key_size]=0;
+        K_AES[i] = 0;
+        K_SHA1[i] = 0;
+        
+     }
+
+
    aes_clrkey(&aes);
    close(fout);
 }

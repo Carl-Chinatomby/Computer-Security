@@ -261,7 +261,8 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
    /* before the end, don't forget to wipe out the variables that were used 
    * to hold sensitive information, such as the symmetric keys for AES and
    * HSHA-1 */
-  
+   AESkey = 0;
+   SHA1key = 0;
    aes_clrkey(&aes);
    close(fout);
    /* print encrypted data */
