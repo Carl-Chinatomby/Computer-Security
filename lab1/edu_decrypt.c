@@ -45,18 +45,18 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
  
           
   /* first, read X_len */
-
+    
+   int bytes_read;
    int x_lensize=2;
    short x_len;
-   read(fin, &x_len, x_lensize*sizeof(char));
+   bytes_read=read(fin, &x_len, x_lensize*sizeof(char));
 
    
    printf("Read for xlen: %d\n", x_len);
-   
-   
+  
    /* now we read X */
    char x[x_len];
-   read(fin, x, x_len);
+   bytes_read=read(fin, x, x_len);
    
    printf("read for xvalue: %s\n", x);
    
@@ -96,17 +96,15 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
   /* First, read the IV (Initialization Vector) */
    int blocksize=128/8;
    char prev_block[blocksize+1], cur_block[blocksize+1], decdata[blocksize+1], plaintxt[blocksize+1];
-   read(fin, prev_block, blocksize);
+   bytes_read=read(fin, prev_block, blocksize);
    
    prev_block[blocksize] = '\0';
-   /*
-   hmac_sha1_update(&sc, prev_block, blocksize);
-   */
+
    printf("the initialization vector is: %s\n", prev_block);
   /* compute the HMAC-SHA1 as you go */
 
   /* Create plaintext file---may be confidential info, so permission is 0600 */
-   int fout;
+   int fout, bytes_wrote;
    if ((fout = open(ptxt_fname, O_WRONLY | O_TRUNC | O_CREAT, 0600)) == -1)
      {
         printf("Error Creating Output file!");
@@ -133,7 +131,6 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    int current =lseek(fin, cursor, SEEK_SET);
    printf("we are currently at: %d\n", current);
    
-   int bytes_read = 0;
    int i =0;
    while (y_read < y_len )
      {
@@ -164,7 +161,7 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
         if (y_read < y_len)
           {
              plaintxt[blocksize] ='\0';
-             write(fout,plaintxt, blocksize*sizeof(char));
+             bytes_wrote=write(fout,plaintxt, blocksize*sizeof(char));
              printf("just wrote because the y_read!=y_len\n");
           }
         
@@ -179,22 +176,14 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    */
   
  
-   char hmac[hmaclen+1], verhmac[hmaclen];
+   char hmac[hmaclen+1]; 
+   u_char verhmac[hmaclen];
    char padding;
    bytes_read = read(fin, hmac, hmaclen);
    printf("just read %d bytes for hmac\n", bytes_read);
    bytes_read=read(fin, &padding, sizeof(char));
    printf("the result of the padding is %d bytes read\n", bytes_read);
-   /*
-   char remainder;
-   
-   bytes_read = read(fin,remainder, sizeof(char));
-   printf("we just read after the file: %s\n", remainder);
-   printf("that is a total of %d bytes\n", bytes_read);
-   int cast = (int) remainder;
-   printf("casted as an it that is %d\n", cast);
-   */
-   /*hmac[hmaclen] = '\0';*/
+  
    printf("the actual hmac is: %s\n", hmac);
    hmac_sha1_final(K_SHA1, key_size, &sc, verhmac);
    printf("the calculated hmac is: %s\n", verhmac);
@@ -215,7 +204,7 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
   
   /* write the decrypted chunk to the plaintext file */
 
-   write(fout,plaintxt, (blocksize-pad)*sizeof(char));
+   bytes_wrote = write(fout,plaintxt, (blocksize-pad)*sizeof(char));
   /* now we can finish computing the HMAC-SHA1 */
   
   /* compare the HMAC-SHA1 we computed with the value read from fin */
@@ -224,8 +213,19 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    * that somebody tampered with the ciphertext file, and you should not
    * decrypt it.  Otherwise, the CCA-security is gone.
    */
+   char verhmac2[hmaclen];
    
-   if (!strcmp(hmac, verhmac))
+   for (i=0; i<hmaclen; i++)
+     {
+        verhmac2[i] = verhmac[i];
+     }
+   
+   
+   printf("the casted verhmac2 is %s\n", verhmac2);
+   
+   
+   
+   if (!strcmp(hmac, verhmac2))
      {
         printf("Hmac verfication...passed\n");
      }
