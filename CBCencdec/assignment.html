@@ -1,0 +1,1018 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+          "http://www.w3.org/TR/html4/strict.dtd">
+<head>
+<title>Lab1: Encryption/Decryption Utility</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" href="../../class.css" type="text/css">
+</head>
+
+</style>
+</head>
+
+<body>
+
+<h1 class="head">CSc 48000: Computer Security</h1>
+<h2 class="title">Lab 1: Encryption/Decryption Utility</h2>
+
+<p class="centered">
+[ 
+<a href="#intro">Introduction</a> |
+<a href="#setup">Software Setup</a> |
+<a href="#labspec">Lab Specification</a> |
+<a href="#design">Design Guidelines</a> |
+<a href="#policy">Collaboration Policy</a> |
+<a href="#handin">Hand-in Procedure</a> |
+<a href="#functions">Useful Functions</a> |
+<a href="#references">References</a> 
+]
+</p>
+
+<hr>
+
+<h2 class="subtitle bar"><a name="intro"></a>Introduction</h2>
+
+<p>
+In this lab, you will build a simple encryption/decryption utility.
+The utility will allow you to generate private key/public key pairs
+for an Adaptive Chosen-Ciphertext (CCA) secure Public-Key Encryption
+scheme.  You can then exchange your public key with your friends, and
+they will be able to encrypt files under your public key, so that only
+you can recover the original plaintext. By doing the lab, you will
+gain experience about how to use Cryptography to build security
+properties into your system.
+
+<p>
+We provide you with a simple cryptographic library (<a
+href="../lab0/libdcrypt-0.5.tar.gz"><tt>libdcrypt</tt></a>),
+containing an implementation of all the cryptographic tools you will
+need for the lab. (See <a href="../lab0/install-libs.html">Lab0</a>
+for instructions on how to install this library in your machine.)  
+
+<h2 class="subtitle bar"><a name="setup"></a>Software Setup</h2>
+<p>
+We have prepared <a href="lab1.tar.gz"><tt>skeleton files</tt></a> to
+help you get started with the lab.  To set up the files on your
+account, download <a href="lab1.tar.gz"><tt>lab1.tar.gz</tt></a>, and
+type the following: 
+<pre class="samp">
+% <span class="type">tar xzf lab1.tar.gz</span>
+% <span class="type">cd lab1</span>
+% 
+</pre>
+
+<h2 class="subtitle bar"><a name="labspec"></a>Lab Specification</h2>
+
+<p>
+Your Encryption/Decryption Utility will consist of three programs:
+<code>edu_keygen</code>, <code>edu_encrypt</code> and
+<code>edu_decrypt</code>.  We provide you with a skeleton source
+directory (<a href="lab1.tar.gz"><tt>lab1.tar.gz</tt></a>), containing
+the following files:
+
+<pre class="samp">
+% <span class="type">ls lab1/</span>
+Makefile        edu_decrypt.c   edu_keygen.c
+edu.h           edu_encrypt.c   edu_misc.c
+%
+</pre>
+
+<p>
+***(The provided <a href="Makefile"><tt>Makefile</tt></a> assumes that
+you will be doing the assignment on the Linux lab machines (NAC 7/105,
+NAC 7/106).  If you are working on your machine, see the <a
+href="#makefilenote">note below</a>.)***
+<p>
+Once you have implemented the necessary functions (see <a
+href="#design">below</a>), you will build the three programs
+<code>edu_keygen</code>, <code>edu_encrypt</code> and
+<code>edu_decrypt</code> using <code>make</code>:
+
+<pre class="samp">
+% <span class="type">make</span>
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -I. -I/usr/inclu
+de/ -I/home/cslab/faculty/fazio/libdcrypt/include/ -c edu_keygen.c edu_misc.c
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -o edu_keygen ed
+u_keygen.o edu_misc.o -L. -L/usr/lib/ -L/home/cslab/faculty/fazio/libdcrypt/lib/
+  -ldcrypt  -lgmp
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -I. -I/usr/inclu
+de/ -I/home/cslab/faculty/fazio/libdcrypt/include/ -c edu_encrypt.c edu_misc.c
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -o edu_encrypt e
+du_encrypt.o edu_misc.o -L. -L/usr/lib/ -L/home/cslab/faculty/fazio/libdcrypt/li
+b/  -ldcrypt  -lgmp
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -I. -I/usr/inclu
+de/ -I/home/cslab/faculty/fazio/libdcrypt/include/ -c edu_decrypt.c edu_misc.c
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -o edu_decrypt e
+du_decrypt.o edu_misc.o -L. -L/usr/lib/ -L/home/cslab/faculty/fazio/libdcrypt/li
+b/  -ldcrypt  -lgmp
+%
+</pre>
+
+<p>
+You should now be able to create your own private key/public key
+pair, and use them as follows:
+
+<pre class="samp">
+% <span class="type">./edu_keygen my_key.priv my_key.pub</span> 
+% <span class="type">yes "test" | head -1000 > a_file</span>
+% <span class="type">./edu_encrypt my_key.pub a_file an_encrypted_file</span>
+% <span class="type">./edu_decrypt my_key.priv an_encrypted_file a_decrypted_file</span> 
+% <span class="type">diff a_file a_decrypted_file</span>
+%
+</pre>
+
+<p>
+Now you think, "This is cool!," and decide to give a copy of your
+encryption/decryption utility to your friend (whose name, surprise,
+surprise, we will assume is Bob). Now that Bob has your program, you
+can exchange public keys: 
+
+<pre class="samp">
+% <span class="type">cat my_key.pub | mail bob@bobserver.org</span> 
+%
+</pre>
+
+<p>
+Once Bob gets your email ...
+<pre class="samp">
+bob>
+You have mail in /var/mail/bob
+</pre>
+
+... he will store your public key in a file named, let's say,
+<code>alice.pub</code>. Now Bob can send you highly confidential messages:
+
+<pre class="samp">
+bob> <span class="type">echo "The deadline for lab1 is March 30" > msg.plain</span> 
+bob> <span class="type"> ./edu_encrypt alice.pub msg.plain msg.cipher</span> 
+bob> <span class="type">uuencode -m msg.cipher bob_msg.cipher | mail alice@aliceserver.org</span>
+bob>
+</pre>
+
+When you get Bob's email:
+
+<pre class="samp">
+% <span class="type">...</span>
+You have mail in /var/mail/alice
+</pre>
+
+... you will uudecode it, obtaining a ciphertext file named
+<code>bob_msg.cipher</code>, and then you will use your private key to
+unveil Bob's top-secret communication:
+
+<pre class="samp">
+% <span class="type">./edu_decrypt my_key.priv bob_msg.cipher bob_msg.plain</span> 
+% <span class="type">cat bob_msg.plain</span> 
+The deadline for lab1 is March 30
+</pre>
+
+
+<p><a name="makefilenote"></a><b>Note on setting up lab1 if you are
+*not* working on the Linux lab machines</b><br /> 
+
+If you have <a href="../lab0/install-libs.html">installed the
+libraries</a> on your own machine, you may need to edit the
+<a href="Makefile"><tt>Makefile</tt></a> that was provided in
+<a href="lab1.tar.gz"><tt>lab1.tar.gz</tt></a>.  <br />
+Locate the following lines (toward the beginning of
+<a href="Makefile"><tt>Makefile</tt></a>):
+
+<pre>
+INCLUDES = /usr/include/                                                        
+LIBS = /usr/lib/                                                                
+DCRYPTINCLUDE = /home/cslab/faculty/fazio/libdcrypt/include/          
+DCRYPTLIB = /home/cslab/faculty/fazio/libdcrypt/lib/
+</pre>
+
+Next, edit these lines so that:
+
+<ul>
+<li> <code>INCLUDES</code> and <code>LIBS</code> point to the
+     directories containing respectively the headers and lib files for
+     <tt>gmp</tt>;
+<li> <code>DCRYPINCLUDE</code> and <code>DCRYPTLIB</code> point to the
+     directories containing respectively the headers and lib files for
+     <tt>dcrypt</tt>.
+</ul>
+
+<h2 class="subtitle bar"><a name="design"></a>Design Guidelines</h2>
+
+<p>
+Now that you know how your encryption/decryption utility is supposed
+to work, let's get into doing something.
+
+<p>
+To help you get acquainted with <a
+href="../lab0/libdcrypt-0.3.tar.gz"><tt>libdcrypt</tt></a>, we implemented 
+<code>edu_keygen</code> for you: take a look at <a
+href="edu.h"><code>edu.h</code></A>, 
+<a href="edu_misc.c"><code>edu_misc.c</code></a>
+and <a href="edu_keygen.c"><code>edu_keygen.c</code></a>,
+and make sure you understand what's going on.
+
+<p>
+We also provide you with an incomplete implementation of
+<code>edu_encrypt</code> and <code>edu_decrypt</code> in <a
+href="edu_encrypt.c" ><code>edu_encrypt.c</code></a> and <a
+href="edu_decrypt.c" ><code>edu_decrypt.c</code></a>.  Your job is to
+fill in the code for the two procedures:
+
+<ul>
+<li><code>void encrypt_file (const char *ctxt_fname, dckey *pk, int
+fin)</code> (in <a href="edu_encrypt.c"
+><code>edu_encrypt.c</code></a>) <li><code>void decrypt_file (const
+char *ptxt_fname, dckey *sk, int fin)</code> (in <a
+href="edu_decrypt.c" ><code>edu_decrypt.c</code></a>) </ul>
+
+<h4>Encrypting the content</h4>
+
+The task of <code>encrypt_file</code> is to read the content from the
+file descriptor <code>fin</code>, encrypt it using <code>pk</code>,
+and place the resulting ciphertext in a file named <code>ctxt_fname</code>.
+
+<p>
+The encryption should be <b>CCA-secure</b>,
+which is the level of cryptographic protection that you should always
+expect of any implementation of an encryption algorithm.
+
+<p> 
+Below we describe a possible design, based on the so-called
+"hybrid encryption" paradigm, but you are free to follow a different 
+approach if you want, as long as it is also CCA-secure.
+ 
+The "hybrid encryption" paradigm combines both public-key and symmetric
+encryption functions: the idea is to:
+<ol>
+<li> pick a random symmetric key <code>K</code> and encrypt it under
+the public key <code>pk</code>; and
+<li> use <code>K</code> to encrypt the  actual content read from the
+<code>fin</code> file descriptor using <em>e.g.,</em> AES.
+</ol>
+
+<p>
+For this to be secure, the public-key encryption scheme used to encrypt 
+<code>K</code> must be CCA-secure (but you don't have to worry about
+this; the public-key encryption functions included in the library you
+are going to use are all CCA-secure).
+
+<p>
+The symmetric encryption part must also be CCA-secure: one good approach
+is to use AES in CBC-mode (described <a href="#cbc">below</a>), and then
+append an HMAC SHA-1 mac of the resulting ciphertext. 
+<span class="important">Always mac after encrypting!</span>
+
+<p>
+The <code>dcrypt</code> library contains implementations of AES 
+and of HMAC SHA-1 (cf. <a href="#functions"> Useful functions</a>).
+<span class="important">However, you should take care of using AES in
+CBC-mode, as the library only gives access to the basic AES block
+cipher functionality, which is <em>not</em> CCA-secure.</span>
+
+<p>
+Notice that the key used to compute the HMAC SHA-1 mac must be
+different from the one used by AES.  <span class="important">Never use
+the same cryptographic key for two different purposes: bad
+interference could occur.</span> <br> For this reason, the key
+<code>K</code> encrypted under the public key <code>pk</code> actually
+consists of two pieces, one for AES and one for HMAC SHA-1. The length
+of both pieces (and hence the cryptographic strength of the
+encryption) is specified by the constant <code>CCA_STRENGTH</code> in
+<a href="edu.h">edu.h</a>; the default is 128 bits, or 16 bytes.
+
+<p>
+Recall that AES can only encrypt blocks of 128 bits, so you should use
+some padding in the case that the length (in bytes) of the plaintext 
+is not a multiple of 16.  This should be done in a way that allow proper 
+decoding after decryption: in particular,  the recipient must have a way 
+to know where the padding begins so that it can be chopped off. 
+
+<p>
+One possible design is to add enough 0 bytes to the plaintext so as to
+make its length a multiple of 16, and then append a byte at the end
+specifying how many zero-bytes were appended.
+
+<p>
+Thus, the overall layout of an encrypted file will be:
+
+<blockquote>
+<pre>
+         +-----+-----------+--------------------------+---+--------+
+         | X_l |     X     |             Y            | W | padlen |
+         +-----+-----------+--------------------------+---+--------+
+
+where X = PKE (pk, {K_AES, K_HSHA-1})
+      X_l = length of X in bytes
+      Y = CBC-AES (K_AES, {plaintext, 0^padlen})
+      W = HMAC-SHA-1 (K_HSHA-1, Y)
+      padlen = no. of zero-bytes added to the plaintext to make its
+               length a multiple of 16
+</pre> 
+</blockquote> 
+
+As for the sizes of the various components of a ciphertext file, notice
+that:
+<uL>
+<li>
+<code>X_l</code> is two-byte-long, 
+
+<li>
+<code>X</code> consists of <code>X_l</code> bytes, 
+
+<li>
+the length of <code>Y</code> (in bytes) is a multiple of 16, 
+
+<li>
+the hash value <code>HSHA-1 (K_HSHA-1, Y)</code> is 20-byte-long, and 
+
+<li>
+<code>padlen</code> is a sigle byte.
+</ul>
+
+<h4>Decrypting the content</h4>
+
+The task of <code>decrypt_file</code> is to read the ciphertext from
+the file descriptor <code>fin</code>, decrypt it using
+<code>sk</code>, and place the resulting plaintext in a file named
+<code>ptxt_fname</code>.
+
+<p>
+This procedure basically should just "undo" the operations performed
+by <code>encrypt_file</code>; for this reason,
+<code>decrypt_file</code> expects a ciphertext featuring the structure
+described above. 
+
+<p>
+Notice that reading in <code>X</code> (i.e., the piece of
+ciphertext that encapsulates the symmetric keys used to encrypt and mac
+the actual file content) is easy, as its length is prefixed, so we
+know exactly how many bytes to read.  
+
+<p>
+Reading <code>Y</code> (and then the mac and the pad length) is a
+bit trickier: below we sketch one possible approach, but you are free
+to implement this as you wish.
+
+<p>
+The idea is based on the fact that the ciphertext file ends with 21
+bytes (i.e., the size of a hash + 1) used up by the HSHA-1 mac and by
+the pad length.  Thus, we will repeatedly attempt to perform "long
+reads" of (<code>aes_blocklen</code> + <code>sha1_hashsize</code> + 2)
+bytes: once we get to the end of the ciphertext and only the last
+chunk of <code>Y</code> has to be read, such "long reads" will
+encounter the end-of-file, at which point we will know where
+<code>Y</code> ends, and how to finish reading the last bytes of the
+ciphertext.
+
+<a name="cbc" class="anchor"><h4>Cipher-Block Chaining (CBC) Mode</h4></a>
+
+For encrypting a stream of bytes that does not require random access,
+people often employ a technique known as <em>Cipher-Block
+Chaining</em> (CBC). To encrypt in CBC mode, one thinks of the stream
+of bytes as a sequence of block, each of the size of the block cipher
+being used (AES in your case); then, one XORs each plaintext block
+with the encryption of the previous block before encrypting, as shown
+here:
+
+<blockquote>
+<img src=cbc.gif alt="Ciphertext-Block Chaining">
+</blockquote>
+ 
+If the plaintext blocks are m<sub>1</sub>, m<sub>2</sub>, ..., and the
+ciphertext blocks c<sub>1</sub>, c<sub>2</sub>, ..., then encryption
+and decryption in CBC mode are performed as follows:
+
+<blockquote>
+c<sub>i</sub> = E(m<sub>i</sub> XOR c<sub>i-1</sub>)<br>
+m<sub>i</sub> = D(c<sub>i</sub>) XOR c<sub>i-1</sub>
+</blockquote>
+
+The first plaintext block is XORed with an initialization vector, or
+IV (which you can think of as c<sub>0</sub>, since there is no
+m<sub>0</sub>).  The IV can be publicly known, but should be chosen
+afresh at random each time the same key will be used to encrypt, so
+that each ciphertext uses a different IV.
+
+<h3><font color=red>Extra credit</font></h3>
+
+The current implementation of <code>edu_keygen</code> stores the
+private key in a file with permissions set to
+<code>0600</code>&mdash;readable only by the owner.  This protects your
+private key from other users in your system, but won't prevent your
+system administrator from reading it.  A better design would be to
+prompt the user for a passphrase, and then use (a hash of) the
+passphrase to encrypt the private key before storing it to the file.
+
+<p>
+For extra credit, modify <code>edu_keygen</code> so that it prompts
+for a passphrase twice, aborting if the two passphrases do not
+match.  (Asking for the passphrase twice protects from the case 
+that you mistype your passphrase&mdash;otherwise, on later access you 
+will remember the password you wanted to type, but may not easily 
+be able to figure out what you actually typed.) 
+
+<p>
+You will also need to modify <code>edu_decrypt</code> so that it also
+prompts for a passphrase, and uses it to decrypt the ciphertext 
+containing the private key.  Then, you should be able to run the
+<code>edu_keygen</code>, <code>edu_encrypt</code> and
+<code>edu_encrypt</code> programs as follows:
+
+<pre class="samp">
+% <span class="type">./edu_keygen my_key.priv my_key.pub</span>
+Passphrase for my_key.priv:
+                     Again:     
+% <span class="type">yes "test" | head -1000 > a_file</span>
+% <span class="type">./edu_encrypt my_key.pub a_file an_encrypted_file</span>
+% <span class="type">./edu_decrypt my_key.priv an_encrypted_file a_decrypted_file</span> 
+Passphrase for my_key.priv:
+% <span class="type">diff a_file a_decrypted_file</span>
+%
+</pre>
+
+You may find the following function helpful to read in the passphrase:
+
+<blockquote>
+<code>#include &lt;unistd.h&gt;</code><br>
+<br>
+<code>char *getpass(const char *prompt);</code><br>
+
+Displays <code>prompt</code> to the user and reads a password typed at
+the terminal, turning off echo so that others cannot see the password
+typed.  The password is returned as a pointer to a
+<code>NULL</code>-terminated ANSI C string.
+</blockquote>
+
+<p>
+Include in the handin directory a short text file called
+<code>extra-credit</code> with a description of the exact technique
+you used to implement this feature.
+
+<h2 class="subtitle bar"><a name="policy"></a>Collaboration Policy</h2>
+
+<p>
+You must write all the code you hand in for the programming assignments,
+except for code that we give you as part of the assigment. You are
+not allowed to look at anyone else's solution. You may discuss the
+assignments with other students, but you may not look at or copy
+each others' code.  You may not use code that might be available 
+online.
+
+<h2 class="subtitle bar"><a name="handin"></a>Hand-In Procedure</h2>
+
+<p>
+You must submit two files:
+<ul>
+  <li>A software distribution of your encryption/decryption utility;
+  <li>A script file showing how you tested your programs.
+</ul>
+
+<p>
+To build a software distribution, run the following commands (from the
+directory where your source files are located):
+
+<pre class="samp">
+% <span class="type">cd ..</span>
+% <span class="type">tar cf edu.tar lab1/</span>
+% <span class="type">gzip edu.tar</span>
+%
+</pre>
+
+(If the name of the directory containing your sources is not
+<code>lab1</code>, then substitute the appropriate name in the
+second command above.)
+
+<p>
+To create a script file, use the <span class="type">script</span>
+command.  When you run script, everything you type gets saved in a
+file called typescript.  Press CTRL-D to finish the script.  
+For example:
+
+<pre class="samp">
+% <span class="type">script</span>
+Script started, output file is typescript
+% <span class="type">./edu_keygen my_key.priv my_key.pub</span> 
+% <span class="type">yes "test" | head -1000 > a_file</span>
+% <span class="type">./edu_encrypt my_key.pub a_file an_encrypted_file</span>
+% <span class="type">./edu_decrypt my_key.priv an_encrypted_file a_decrypted_file</span>
+% <span class="type">diff a_file a_decrypted_file</span>
+% <span class="type"></span>
+% <span class="type">...</span>
+% <span class="type">yes "test" | head -1015 > a_file</span>
+% <span class="type">./edu_encrypt my_key.pub a_file an_encrypted_file</span>
+% <span class="type">./edu_decrypt my_key.priv an_encrypted_file a_decrypted_file</span>
+% <span class="type">diff a_file a_decrypted_file</span>
+% <span class="type"></span>
+% <span class="type">^D</span>
+% <span class="type">^D</span> Script done, output file is typescript 
+% 
+</pre>
+
+<p>
+To turn in your distribution and script file, e-mail the files
+<code>edu.tar.gz</code> and <code>typescript</code> to me at <t>"fazio
+AT cs DOT ccny DOT cuny DOT edu"</t> by March 30, 11:59pm.
+
+<p>
+<b>This completes the lab.</b>
+
+<hr>
+
+<h2 class="subtitle bar"><a name="functions"></a>Useful Functions</h2>
+
+<p>
+Below is a description of some of the functions implemented in the 
+<a href="../lab0/libdcrypt-0.5.tar.gz"><tt>dcrypt</tt></a> library
+that you may find useful in completing the assignment. You will need
+to include the <a href="../lab0/libdcrypt-0.5/dcrypt.h"><tt>dcrypt.h</tt></a>
+header file to access these functions.  You may also want to take a
+look at these sample programs (<a href="../lab0/libdcrypt-0.5/tst.c">tst.c</a>, 
+<a href="../lab0/libdcrypt-0.5/tst_sha1.c">tst_sha1.c</a>)
+to see some of these functions in action.
+
+<h3>Data serialization</h3>
+
+<ul>
+<li><code>void putint (void *dp, u_int32_t val);</code>
+<li><code>void puthyper (void *dp, u_int64_t val);</code><br>
+The <code>putint</code> function puts the 32-bit integer value of
+<code>val</code> into memory in big-endian order at location
+<code>dp</code>.  <code>dp</code> does not need to be aligned.  The
+bytes stored at <code>dp</code> will be the same on big- and
+little-endian machines.  <code>puthyper</code> is like
+<code>putint</code> but puts a 64-bit value into 8 bytes of memory.
+
+<p>
+<li><code>u_int32_t getint (const void *dp);</code>
+<li><code>u_int64_t gethyper (const void *dp);</code><br>
+The <code>getint</code> and <code>gethyper</code> routines retrieve
+values stored by <code>putint</code> and <code>puthyper</code>
+respectively.
+
+<p>
+<li><code>char *armor64 (const void *dp, size_t len);</code><br>
+Transforms <code>len</code> bytes from the binary string pointed by
+<code>dp</code> to a longer, base-64, printable ASCII string.  You
+will need to use this to transform random session keys (which could
+contain zero-bytes) into a <code>NULL</code>-terminated ANSI C string.  
+
+<p>
+<li><code>ssize_t dearmor64 (void *out, const char *s);</code><br>
+Inverts the <code>armor64</code> function, and return the number of
+bytes that were placed at <code>out</code>.  The return value is
+negative if the <code>NULL</code>-terminated ANSI C string
+<code>s</code> is not the output of <code>armor64</code>. 
+
+<p>
+<li><code>ssize_t armor64len (const char *s);</code><br>
+Tries to find an armored string starting at the byte pointed to by 
+<code>s</code>.  If some prefix of <code>s</code> represents a valid
+armor64 string, then the length of such prefix is returned.  Otherwise,
+-1 is returned, indicating that s is not the output of <code>armor64</code>.
+
+<p>
+<li><code>ssize_t dearmor64len (const char *s);</code><br>
+Tries to find an armored string starting at the byte pointed to by 
+<code>s</code>.  If some prefix of <code>s</code> represents a valid
+armor64 string, then the length of the decoded data that would result
+by "dearmoring" <code>s</code> is returned.  Otherwise, -1 is
+returned, indicating that s is not the output of <code>armor64</code>. 
+</ul>
+
+<h3>Pseudo-Random Number Generation Functions</h3>
+<p>
+
+The libraries you are using contain a cryptographic pseudo-random
+number generator, whose state is kept in a global 16-byte array called
+<code>prng_state</code>.  Before using the random number generator,
+you must initialize it. 
+
+<ul>
+<li><code>void prng_seed (void *buf, size_t len);</code><br>
+
+This function initializes the state of the random number generator
+using <code>len</code> bytes from <code>buf</code> as seed.  Providing
+a good seed may be a difficult task; some Operating Systems
+(including FreeBSD, OpenBSD and most Linux distributions) provide
+you with a source of randomness under <code>/dev/random</code> (or one
+of its variants: <code>/dev/srandom</code>, <code>/dev/urandom</code>,
+<em>etc.</em>).  If a <code>random</code> 
+device is available, you should read (at least) 128 bits from it and
+use it as a seed; otherwise, as a <b><em>very rough</em></b>
+approximation, you could supply some information about your local
+machine (<em>e.g.,</em> time of the day, PID/GID value) that is
+difficult to predict.  
+
+<p>
+<li><code>void prng_getbytes (void *buf, size_t len);</code><br>
+Writes <code>len</code> pseudo-random bytes to memory at location
+<code>buf</code>.
+
+<p>
+<li><code>u_int32_t prng_getword ();</code><br>
+<li><code>u_int64_t prng_gethyper ();</code><br>
+These functions return a single pseudo-random 32- or 64-bit integer,
+respectively.
+</ul>
+
+<h3>Symmetric-Key Encryption Functions</h3>
+<p>
+For actually encrypting and decrypting file data, you will use the <a
+href="http://csrc.nist.gov/publications/fips/fips197/fips-197.pdf">Rijndael</a>
+<b>[FIPS-197]</b> block cipher (also called <span
+class="type">AES</span>&mdash;Advanced 
+Encryption Standard).  Rijndael is a 128-bit block cipher.  It
+supports two 
+operations--encryption, and decryption.  Encryption transforms 16
+bytes (128 bits) of <i>plaintext</i> data into 16 bytes of
+<i>ciphertext</i> data using a secret key.  Someone who does not know
+the secret key cannot recover the plaintext from the ciphertext.  The
+decryption algorithm, given knowledge of the secret key, transforms
+ciphertext into plaintext.
+
+<p>
+The libraries you are using define a <code>struct</code> called
+<code>aes_ctx</code> that you should use to hold secret keys for AES.
+You should manipulate your AES secret keys with the following functions:
+
+<ul>
+<li><code>void aes_setkey (aes_ctx *aes, const void *key, u_int
+len);</code><br> 
+
+This sets the secret encryption key using <code>len</code> bytes fro
+the buffer <code>key</code>.  <b>The key must be 16-, 24-, or
+32-long.</b> 
+
+<p>
+<li><code>void aes_encrypt (const aes_ctx *aes, void *buf, const void
+*ibuf);</code><br> 
+
+<code>aes_encrypt</code> transforms 16 bytes of plaintext data at
+<code>ibuf</code> into 16 bytes of ciphertext data which it writes to
+<code>buf</code>.  It uses the secret key previously stored within 
+<code>aes</code> using the <code>aes_setkey</code> function.
+
+<p>
+<li><code>void aes_decrypt (const aes_ctx *aes, void *buf, const void
+*ibuf);</code><br> 
+
+<code>aes_decrypt</code> decrypts 16 bytes, inverting the
+<code>aes_encrypt</code> function.
+
+<p>
+<li><code>void aes_clrkey (aes_ctx *aes);</code><br> 
+
+This clears the content of <code>aes</code>, thus wiping out the secret
+encryption key that was previosly stored there. <br>
+<span class="important">Once you are done with a secret key, you
+should always wipe out the memory location where the secret key was
+stored!</span> The Operating System safeguards your memory from
+external processes only while that piece of memory is assigned to your
+program: once your program exits, the memory location used to store
+your precious secret key could be assigned to another process,
+jeopardizing the security of your application.
+</ul>
+
+<h3>Public-Key Encryption Functions</h3>
+<p>
+If you only used symmetric-key cryptography, you would need to
+exchange a secret key with all the friends with whom you want to have
+confidential communication.  With Public-Key Cryptography, instead,
+you can give all your friend the same public key, and they will be
+able to send you encrypted content that only you can recover.
+Similarly, you only need to know your friend's public key to create a
+ciphertext that only he/she will be able to decrypt.
+
+The libraries you are going to use contain an implementation of two
+very well-known Public-Key Encryption schemes: Rabin <b>[Wil80]</b> and
+ElGamal <b>[ElG86]</b>
+To complete the assignment, you don't need to know anything about how
+these schemes work, except for the interface that they provide, which
+is described below:
+
+<ul>
+<li><code>dckey *dckeygen (const char *type, size_t k, const char
+*extra);</code><br>  
+
+Returns a pointer to a <code>struct</code> that holds a new private
+key/public key pair, of the type specified by <code>type</code>.  The
+value of <code>type</code> should be one of the constants defined in 
+<a href="../lab0/libdcrypt-0.5/dcrypt.h"><code>dcrypt.h</code></a>, namely
+<code>DC_ELGAMAL</code> or <code>DC_RABIN</code>.
+
+<p>
+The cryptographic strength of the key pair generated can be tuned
+using the parameter <code>k</code>: a value of at least 1024 is
+recommended to get a reasonable level of security.
+
+<p>
+The value of <code>extra</code> should be either <code>NULL</code>, or
+an ASCII string representing information about the parameters that
+should be used in generating the private key/public key pair.<br>  For
+this assignment, you can always supply a value of <code>NULL</code>.
+
+<p>
+Notice that the <code>dckeygen</code> function internally makes use of
+the pseudo-random number generator provided by <code>libdcrypt</code>:
+therefore, you shouldn't call <code>dckeygen</code> before
+initializing the pseudo-random number generator with <code>prng_seed</code>.
+
+<p>
+<li><code>char *dcexport_pub (const dckey *key);</code>
+<li><code>char *dcexport_priv (const dckey *key);</code><br>
+
+The <code>dcexport_pub</code> and <code>dcexport_priv</code> functions
+return a base-64, printable, <code>NULL</code>-terminated ANSI C
+string representing the public key or private key stored within
+<code>key</code>, respectively. 
+
+<p>
+<li><code>dckey *dcimport_pub (const char *asc);</code>
+<li><code>dckey *dcimport_priv (const char *asc);</code><br>
+
+The <code>dcimport_pub</code> and <code>dcimport_priv</code> functions
+retrieve the <code>dckey</code> that was previously exported into
+the ASCII string <code>asc</code> using <code>dcexport_pub</code> or
+<code>dcexport_priv</code>, respectively.
+
+<P> 
+If <code>asc</code> is not of the form expected,
+<code>dcimport_pub</code> and <code>dcimport_priv</code> return
+<code>NULL</code>. 
+
+<p>
+<li><code>char *dcencrypt (const dckey *key, const char *msg);</code><br>
+
+<code>dcencrypt</code> uses the public key contained in
+<code>key</code> to transform the plaintext data contained in the
+<code>NULL</code>-terminated ANSI C string <code>msg</code> into a 
+<code>NULL</code>-terminated ANSI C ciphertext string, which is
+returned as output.
+
+<p>The encryption algorithm used is CCA-secure.
+
+<p>
+Since <code>dcencrypt</code> expects the plaintext to be a 
+<code>NULL</code>-terminated ANSI C string, you should use
+the <code>armor64</code> function if you need to encrypt an arbitrary
+bit string (such as a secret key for AES).
+
+<p>
+<li><code>char *dcdecrypt (const dckey *key, const char *cmsg);</code><br> 
+
+<code>aes_decrypt</code> decrypts the ciphertext contained in the 
+<code>NULL</code>-terminated ANSI C string <code>cmsg</code>,
+inverting the <code>dcencrypt</code> function.
+
+<p>
+<li><code>void dcfree (dckey *key);</code><br> 
+
+This clears the content of <code>key</code>.  
+<span class="important">Once you are done with a private key, you
+should always wipe out the memory location where it was stored!</span>
+
+<p>
+<li><code>int dcispriv (const dckey *key);</code><br>
+
+Returns a non-zero value if the key contained in the <code>key</code>
+is a private key; otherwise it returns 0. 
+</ul>
+
+
+<h3>Cryptographic Hash Functions</h3>
+<p>
+The <a
+href="http://csrc.nist.gov/publications/fips/fips180-1/fips180-1.pdf">SHA-1</a>
+<b>[FIPS-180-1]</b> hash function hashes an arbitrary-length input (up
+to 2^64 bytes) to a 
+20-byte output.  SHA-1 is known as a cryptographic hash function.
+While nothing has been formally proven about the function, it is
+generally assumed that SHA-1 is one-way and collision-resistant.
+These properties are defined as follows:
+
+<ul>
+<li>A <i>one-way</i> function is a function that is cheap to compute,
+but computationally intractable to invert.  For example, Unix uses a
+one-way hash function to hash users' passwords, and stores password
+hashes rather than actual passwords.  When a user logs in, the user
+types a password, Unix hashes this password and compares the new hash
+to the one stored.  If they match, the login is successful.
+
+<p>For someone who steals the file of password hashes, there is no
+known way of recovering passwords more efficient than guessing
+passwords and verifying the guesses.  (Of course, the fact that users
+often choose easily-guessed passwords is a problem.)
+
+<p>
+<li>A <i>collision-resistant</i> hash function is one for which it is
+computationally intractable to find any two inputs that yield the same
+output.  In the case of SHA-1, there are, of course, a huge number of
+collisions.  One can see this by a simple counting argument--there are
+2^55,340,232,221,128,654,848 possible inputs to the function and only
+2^160 possible output values.  Nonetheless, no one has ever succeeded
+in finding two inputs producing the same output--even cryptographers
+specifically analyzing the algorithm for this purpose.
+
+<p>
+Collision-resistant functions have many uses, stemming from the fact
+that the short output value effectively uniquely specifies an
+arbitrary-length input.  One cannot recover the input from the output,
+but given the input, one can verify that it does, indeed, match the
+output.  One might, for instance, implement a web cache in which
+contents is indexed by a SHA-1 hash of the URL.  Having fixed-length
+names for stored content would simplify the implementation.
+</ul>
+
+The libraries you are using contain an implementation of SHA-1.
+
+<ul>
+<li><code>void sha1_hash (void *digest, const void *buf, size_t
+len);</code><br> 
+
+Hashes <code>len</code> bytes of data at <code>buf</code>, and places
+the resulting 20 bytes at <code>digest</code>.
+</ul>
+
+<p>
+Sometimes the input that you want to hash is so long that it is
+inconvenient to store it entirely in memory before being able to
+hash it.  This is the case for example when hashing the entire content
+of a file into a short digest.  <br>
+For this reason, the libraries you are using allow you to process a
+long input "one chunk at a time."  To do that, you should use a
+<code>struct</code> called <code>sha1_ctx</code>, which will store the
+"partial digest" as you keep providing new input to be hashed.  You
+should manipulate <code>sha1_ctx</code> <code>struct</code>s with the
+following functions: 
+
+<p>
+<ul>
+<li><code>void sha1_init (sha1_ctx *sc);</code><br>
+
+Initializes the <code>sha1_ctx struct</code> that will contain the
+partial hash.
+
+<p>
+<li><code>void sha1_update (sha1_ctx *sc, const void *data, size_t
+len);</code><br> 
+
+Adds <code>len</code> bytes at <code>data</code> to the input being
+hashed, but does not produce a result.  Thus, one can hash a large
+amount of data without having it all in memory, by calling
+<code>sha1_update</code> on one chunk at a time.
+
+<p>
+<li><code>void sha1_final (sha1_ctx *sc, void *digest);</code><br>
+
+Produces the final hash, and places the resulting 20 bytes at
+<code>digest</code>. 
+</ul>
+
+<h3>Message Authentication Codes (MACs)</h3>
+<p>
+Message Authentication Codes (MACs) are a symmetric-key primitive 
+allowing you to check the integrity of the information to which the
+MAC is applied. 
+<span class="important">Recall that encryption <em>does not</em>
+guarantee integrity!</span>
+ The fact that you were able to decrypt a ciphertext is
+not enough to be sure that nobody tampered with its content. For
+integrity, you should always append a MAC to the content.
+
+<p>
+You use MACs as follows. Let's say that you want to store a file on
+your file-server, but you are afraid that its content will be changed
+behind your back.  Then, you use a secret key to "mac" the file, and
+store the resulting MAC along with the file.  Now, when you check back
+with your file-server and retrieve your file, you will also retrieve
+the MAC that you appended.  Then, you will use the secret key to
+compute the MAC again, and if the MAC you just computed is the same as
+the value that you retrieved from the file-server, then you are sure
+that nobody touched your file. This is because, if somebody had
+changed the file, then they should have computed the corresponding MAC
+in order to fool you. However, secure MACs are concocted such that,
+without knowing the secret key, it is computationally intractable to
+compute the right MAC, even after having seen a lot of valid
+(message, MAC) pairs. 
+
+<p>
+The <a
+href="http://csrc.nist.gov/publications/fips/fips198/fips-198a.pdf">Keyed-Hash
+Message Authentication Code (HMAC)</a> <b>[FIPS-198a]</b> is a secure Message
+Authentication Code based on the use of any cryptographic hash
+function, like SHA-1.
+The libraries you are using contain an implementation of HMAC,
+instantiated with the SHA-1 cryptographic hash function.
+
+<ul>
+<li><code>
+void hmac_sha1 (const char *key, size_t keylen, void *out, const void
+*data, size_t dlen);</code><br>  
+
+Computes the HMAC over <code>len</code> bytes of data at
+<code>buf</code> using the key <code>key</code>, and places
+the resulting 20 bytes at <code>out</code>.
+</ul>
+
+<p>
+Similarly to what discussed for the case of SHA-1, the libraries you
+are using allow you to process a long input "one chunk at a time."
+
+<p>
+<ul>
+<li><code>void hmac_sha1_init (const char *key, size_t keylen,
+sha1_ctx *sc);</code><br>
+
+Initializes the <code>sha1_ctx struct</code> that will contain the
+partial HMAC under the key <code>key</code>.
+
+<p>
+<li><code>void hmac_sha1_update (sha1_ctx *sc, const void *data, size_t
+len);</code><br> 
+
+Adds <code>len</code> bytes from <code>data</code> to the input being
+hmac'ed, but does not produce a result.  Thus, one can hmac a large
+amount of data without having it all in memory, by calling
+<code>hmac_sha1_update</code> on one chunk at a time.<br>
+Notice that the key is not needed when adding chunks.
+
+<p>
+<li><code>void hmac_sha1_final (const char *key, size_t keylen,
+sha1_ctx *sc, void *out);</code><br> 
+
+Produces the final HMAC, and places the resulting 20 bytes at
+<code>out</code>. <br>
+Notice that the result is undefined if the <code>key</code> used in
+<code>hmac_sha1_final</code> is different from the one initially used in
+<code>hmac_sha1_init</code>.
+</ul>
+
+<h2 class="subtitle bar"><a name="references"></a>References</h2>
+
+<table>
+
+<tr>
+<th valign=top>
+[ElG85]
+</th>
+<td>
+<em>T. ElGamal</em>, <b>A public key cryptosystem and a signature
+scheme based on discrete logarithms</b>.<br>
+IEEE Transactions on Information Theory, Vol. IT-31, No. 4, 
+pp. 469--472, July 1985.   
+</td>
+</tr>
+
+<tr>
+<th valign=top>
+[FIPS-180-1]
+</th>
+<td>
+<em>FIPS-180-1</em>, <b>Secure Hash Standard</b>.<br>
+U.S. Department of Commerce/N.I.S.T., 1994
+</td>
+</tr>
+
+<tr>
+<th valign=top>
+[FIPS-197]
+</th>
+<td>
+<em>FIPS-197</em>, <b>Announcing the Advanced Encryption Standard</b>.<br>
+U.S. Department of Commerce/N.I.S.T., 2001
+</td>
+</tr>
+
+<tr>
+<th valign=top>
+[FIPS-198a]
+</th>
+<td>
+<em>FIPS-198a</em>, <b>The Keyed-Hash Message Authentication Code
+(HMAC)</b>.<br> 
+U.S. Department of Commerce/N.I.S.T., 2002
+</td>
+</tr>
+
+<tr>
+<th valign=top>
+[Wil80]
+</th>
+<td>
+<em>H. C. Williams</em>, <b>A Modification of the RSA Public-Key
+Encryption Procedure</b>.<br>
+IEEE Transactions on Information Theory, Vol. IT-26, No. 6,
+November 1980. 
+<td>
+</tr>
+
+</table>
+
+<hr>
+
+
+<div style="font-size: xx-small">
+Credits: David Mazi&egrave;res and Antonio Nicolosi. <br>
+<!--Versions of this Lab also assigned in classes taught at NYU.-->
+</div>
+
+</body>
+
