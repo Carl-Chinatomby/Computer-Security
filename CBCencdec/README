@@ -1,0 +1,9 @@
+This is Carl Chinatomby's Submission for Lab#1 for
+the Spring 2011 CSC 48000 Computer Security Course
+taught by Professor Nelly Fazio. 
+
+Included is a test.sh file that I used to test my program
+I also have a typescript file to show some of the output.
+Since typescripts aren't runnable, i used the test.sh file
+whenever a change was made to ensure no bugs were introduced
+in my change. 
