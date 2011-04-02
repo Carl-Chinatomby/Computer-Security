@@ -113,7 +113,12 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
       for (i = 0; i<blocksize; i++)
          plaintxt[i]=decdata[i] ^ prev_block[i];
   
-      strcpy(prev_block, cur_block);
+      /* we can't use strcpy(prev_block, cur_block) because the xor
+       * might return a null character and then str will stop copying at
+       * the null character
+       */
+      for (i = 0; i<blocksize; i++)
+        prev_block[i] = cur_block[i];
       prev_block[blocksize]='\0';
       if (y_read < y_len){
          plaintxt[blocksize] ='\0';
@@ -143,7 +148,8 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    * zeroes, (how many zeroes were added is specified by the last byte in 
    * the ciphertext (padlen).
    */
-   bytes_wrote = write(fout,plaintxt, (blocksize-padlen)*sizeof(char));
+   if (y_read != 0 && padlen != 0)
+     bytes_wrote = write(fout,plaintxt, (blocksize-padlen)*sizeof(char));
 
    /* now we can finish computing the HMAC-SHA1 */
    hmac_sha1_final(sha1key, keysize, &sc, verhmac);
