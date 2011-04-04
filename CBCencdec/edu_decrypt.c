@@ -44,7 +44,7 @@ decrypt_file (const char *ptxt_fname, dckey *sk, int fin)
    */
    
   /* first, read X_len */    
-   const int blocksize=128/8;
+   const int blocksize=CCA_STRENGTH;
    const int x_lensize = 2;
    int bytes_read, bytes_wrote;
    short x_len;

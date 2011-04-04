@@ -65,7 +65,7 @@ encrypt_file (const char *ctxt_fname, dckey *pk, int fin)
    * is 20-byte-long, and padlen is a sigle byte.
    *
    ***************************************************************************/
-   const int blocksize=128/8; /*128 bits*/
+   const int blocksize=CCA_STRENGTH;
    int bytes_read, bytes_wrote=0;
    int fout, finrand;
    int i;
