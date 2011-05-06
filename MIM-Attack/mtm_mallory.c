@@ -24,6 +24,11 @@ attack (int s, const char *msg)
   static mpz_t y_m;
   static mpz_t elem_m;
 
+   char *y_a_pos, *y_b_pos, *end_port;
+   char *altered_msg = NULL;  
+   char* signed_port;
+   size_t cpylen;
+   
   switch (s) {
   case FirstStage:
     from_a = process_ke_msg (msg, NULL);
@@ -44,12 +49,10 @@ attack (int s, const char *msg)
     /* let's build a new message with this new g^m mod p and everything 
      * else is copied
     */
-     char *y_a_pos, *end_port;
-     char *altered_msg = NULL;  
      y_a_pos = strstr(msg, "y_a=");
      y_a_pos += 4;
-     size_t cpylen = y_a_pos - msg;
-     char* signed_port = (char*) xmalloc(cpylen * sizeof(char));
+     cpylen = y_a_pos - msg;
+     signed_port = (char*) xmalloc(cpylen * sizeof(char));
      strncpy(signed_port, msg, cpylen);
      end_port = strstr(msg, ",cert_a=");
      cat_str(&altered_msg, signed_port);
@@ -65,21 +68,18 @@ attack (int s, const char *msg)
      /* use the y_m from before to disrupt bob's message so alice can 
       * authenticate with mallory
      */
-     /*
-     char *y_b_pos, *end_port;
-     char *altered_msg = NULL;  
-     y_a_pos = strstr(msg, "y_a=");
-     y_a_pos += 4;
-     size_t cpylen = y_a_pos - msg;
-     char* signed_port = (char*) xmalloc(cpylen * sizeof(char));
+     y_b_pos = strstr(msg, "y_b=");
+     y_b_pos += 4;
+     cpylen = y_b_pos - msg;
+     signed_port = (char*) xmalloc(cpylen * sizeof(char));
      strncpy(signed_port, msg, cpylen);
-     end_port = strstr(msg, ",cert_a=");
+     end_port = strstr(msg, ",cert_b=");
      cat_str(&altered_msg, signed_port);
      cat_mpz(&altered_msg, y_m);
-     cat_str(&altered_msg, end_port);      
+     cat_str(&altered_msg, end_port);
      res = xstrdup (altered_msg);
-     */
-    res = xstrdup (msg);
+     
+    /*res = xstrdup (msg);*/
     break;
   case LastStage:
     payload = NULL; 
