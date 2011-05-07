@@ -1,3 +1,4 @@
+rm *.o
 make
 ./mtm_pki init
 ./mtm_pki cert -g alice.priv alice.pub alice

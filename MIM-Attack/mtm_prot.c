@@ -467,9 +467,12 @@ send_secret (int fd, u_char secret[aes_blocklen],
   aes_setkey (&aes, seskey, 16);   /* only use the first 16 bytes of seskey */ 
   aes_encrypt (&aes, secret, secret);
   aes_clrkey (&aes);
-  
+
+      fprintf(stderr, "before armored secret is %s", secret);
+   
   /* armor the ciphertext and send it to bob */
   armored_secret = armor64 (secret, aes_blocklen);
+
   write_chunk (fd, armored_secret, strlen (armored_secret));
   write (fd, "\n", 1);
   xfree (armored_secret);

@@ -95,6 +95,7 @@ main (int argc, char **argv)
     }
     else {
       /* choose a random number to send */
+       fprintf(stderr, "the sessionkey is %s", seskey);
       prng_getbytes (secret, aes_blocklen);
       cat_buf (&pretty_secret, secret, aes_blocklen);
       
