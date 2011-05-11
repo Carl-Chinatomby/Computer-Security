@@ -1,0 +1,84 @@
+Script started on Wed 11 May 2011 12:23:21 AM EDT
+]0;carl@Duvel: ~/ComputerSecurity/git/Computer-Security/MIM-Attackcarl@Duvel:~/ComputerSecurity/git/Computer-Security/MIM-Attack$ . test.sh
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -I. -I/usr/include/ -I/usr/local/include/  -c mtm_pki.c
+mtm_pki.c: In function ‘g_option’:
+mtm_pki.c:48: warning: the address of ‘raw_pk’ will always evaluate as ‘true’
+mtm_pki.c:54: warning: the address of ‘raw_pk’ will always evaluate as ‘true’
+mtm_pki.c: In function ‘main’:
+mtm_pki.c:315: warning: the address of ‘cert_file’ will always evaluate as ‘true’
+mtm_pki.c:320: warning: the address of ‘cert_file’ will always evaluate as ‘true’
+mtm_pki.c:324: warning: the address of ‘cert_file’ will always evaluate as ‘true’
+mtm_pki.c:335: warning: the address of ‘cert_file’ will always evaluate as ‘true’
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -I. -I/usr/include/ -I/usr/local/include/  -c mtm_cert.c
+mtm_cert.c: In function ‘cert_sign_n_write’:
+mtm_cert.c:306: warning: the address of ‘cert_msg’ will always evaluate as ‘true’
+mtm_cert.c:319: warning: the address of ‘cert_msg’ will always evaluate as ‘true’
+mtm_cert.c:331: warning: the address of ‘cert_msg’ will always evaluate as ‘true’
+mtm_cert.c:338: warning: the address of ‘cert_msg’ will always evaluate as ‘true’
+mtm_cert.c: In function ‘cert_verify’:
+mtm_cert.c:377: warning: the address of ‘raw_cert’ will always evaluate as ‘true’
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -I. -I/usr/include/ -I/usr/local/include/  -c edu_misc.c
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -o mtm_pki mtm_pki.o mtm_cert.o edu_misc.o -L. -L/usr/lib/  -L/usr/local/lib/ -ldcrypt  -lgmp
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -I. -I/usr/include/ -I/usr/local/include/  -c mtm_alice.c
+mtm_alice.c: In function ‘main’:
+mtm_alice.c:71: warning: the address of ‘ke_msg1’ will always evaluate as ‘true’
+mtm_alice.c:78: warning: the address of ‘ke_msg2’ will always evaluate as ‘true’
+mtm_alice.c:85: warning: the address of ‘ke_msg2’ will always evaluate as ‘true’
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -I. -I/usr/include/ -I/usr/local/include/  -c mtm_prot.c
+mtm_prot.c: In function ‘read_line’:
+mtm_prot.c:17: warning: the address of ‘res’ will always evaluate as ‘true’
+mtm_prot.c: In function ‘export_ke_msg’:
+mtm_prot.c:105: warning: the address of ‘res’ will always evaluate as ‘true’
+mtm_prot.c:109: warning: the address of ‘cert_a’ will always evaluate as ‘true’
+mtm_prot.c: In function ‘process_ke_msg’:
+mtm_prot.c:235: warning: the address of ‘signed_part’ will always evaluate as ‘true’
+mtm_prot.c: In function ‘export_ke_reply’:
+mtm_prot.c:289: warning: the address of ‘res’ will always evaluate as ‘true’
+mtm_prot.c:293: warning: the address of ‘cert_b’ will always evaluate as ‘true’
+mtm_prot.c: In function ‘process_ke_reply’:
+mtm_prot.c:424: warning: the address of ‘signed_part’ will always evaluate as ‘true’
+mtm_prot.c: In function ‘send_secret’:
+mtm_prot.c:474: warning: ignoring return value of ‘write’, declared with attribute warn_unused_result
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -o mtm_alice mtm_alice.o mtm_prot.o mtm_cert.o edu_misc.o -L. -L/usr/lib/  -L/usr/local/lib/ -ldcrypt  -lgmp
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -I. -I/usr/include/ -I/usr/local/include/  -c mtm_bob.c
+mtm_bob.c: In function ‘main’:
+mtm_bob.c:69: warning: the address of ‘ke_msg1’ will always evaluate as ‘true’
+mtm_bob.c:75: warning: the address of ‘ke_msg1’ will always evaluate as ‘true’
+mtm_bob.c:83: warning: the address of ‘ke_msg2’ will always evaluate as ‘true’
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -o mtm_bob mtm_bob.o mtm_prot.o mtm_cert.o edu_misc.o -L. -L/usr/lib/  -L/usr/local/lib/ -ldcrypt  -lgmp
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -I. -I/usr/include/ -I/usr/local/include/  -c mtm_launcher.c
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -o mtm_launcher mtm_launcher.o mtm_prot.o mtm_cert.o edu_misc.o -L. -L/usr/lib/  -L/usr/local/lib/ -ldcrypt  -lgmp
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -I. -I/usr/include/ -I/usr/local/include/  -c mtm_mallory.c
+mtm_mallory.c: In function ‘attack’:
+mtm_mallory.c:32: warning: unused variable ‘elem_m’
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts  -o mtm_mallory mtm_mallory.o mtm_prot.o mtm_cert.o edu_misc.o -L. -L/usr/lib/  -L/usr/local/lib/ -ldcrypt  -lgmp
+Received from Alice:
+====================
+MTM-Flow1-1:param=(p=0xf79f1bc68ff0853731fcdf48c726fcd0fd7d67787865d1022d3e6ae51b26db9486307c77040f44229c772b392c9f98a9028bfbc3cc71966511d89a947ae0d87ea8fccfcc3d67a426d8179e5dacac5648c208324e29166a153736e2dd0a619781609a8b94e52fcf0ba5f4c4cb8f4471cdaa7530737521b06f1251d466144c2d03,q=0xf79f1bc68ff0853731fcdf48c726fcd0fd7d67787865d1022d3e6ae51b26db9486307c77040f44229c772b392c9f98a9028bfbc3cc71966511d89a947ae0d87ea8fccfcc3d67a426d8179e5dacac5648c208324e29166a153736e2dd0a619781609a8b94e52fcf0ba5f4c4cb8f4471cdaa7530737521b06f1251d466144c2d02,g=0xb),n_a=FYCZykMZesQ066+DkZEHu2smxoE=,id_b=bob,y_a=0xe6589230541d26cfb45052d2f5264863730fddbc45c2f53a7b116710e48a5e6bfd12e76870010f8604c808efcb8083f1ec315ad638f45a6ef095b8109c38eb69a48e77cc46de1f0450ddab1dc279e9b9cbd9ee0cf6c64d6cbbd5d15bba811edcf79cbdc8ce706c14ef48715723dd968cd8d5ed4ab95b48177af367042b2719a4,cert_a=(MTM-Cert-1:ca=(Rabin-1:Pub,n=0x4eae475af9b4f1b3093cdbaeee283868b0b1cfad53bea447583812fd41321b7bfe231856d63a38fc70bf8ac38bb8d3090f1db6c12971f3ad6b5f229ac9c31c753a16fdce1f31e669a71f4933409917c620335b009c22d54ac348adbbd69236fcc349c04e3b720473485b8672f83f7ea14713c02462ae4ce26a5564a1e547ea15),id=alice,pk=(Rabin-1:Pub,n=0x198508f853035f265636b766c70a450f94c14684d89ba5f3140a1a2e5478040565ad287510bc8e538fb4293c36a0c59193f46961ecd6d88976349a899bf2344eed66cae35a8e8eaa8e671c49a8639cb9c27ab2b65d10aa56702bcd159d8f8192e9ec3c5cf96a4b2b799042c6f0a012103ffe6295c8b6cfd242c35f794d9e950d),issued=Wed May 11 00:23:26 2011,expires=Fri Jun 10 00:23:26 2011,sig=0x6d5b35d8d77477ba2e9ebec3e86d2cec7902d22a36159d43bba17e1a862bff7678d1880a5b7ca94dc6af7a60275fa192158ac9d9ccc606912de7f9254b57173cf0f5ffac318632b5de7f0de2e619d8b08db9783a3d4ae34ec2b9e5f42c96bfa99f0c67fa4844ebb572d05dd0fc958dd5bd0d9ad830e18a2f11768b11133d5a9),sig_a=0x737c7d961c5ce7fe8d52353cb98fd5a7381033059b2d49366059c3d11be03b6e3190010d69dd41ae7daa5564b3f81a5cca2d9aad7c51b53d3bdad3326d4616373decae973592f337f43f291e334e8faa94c4de79713a708bdca50e8252349aab4b08536bd4d027827c5e5b26957c7bdc2aa7081fc1a9f043ab40a321e7845dc
+
+Sent to Bob:
+============
+MTM-Flow1-1:param=(p=0xf79f1bc68ff0853731fcdf48c726fcd0fd7d67787865d1022d3e6ae51b26db9486307c77040f44229c772b392c9f98a9028bfbc3cc71966511d89a947ae0d87ea8fccfcc3d67a426d8179e5dacac5648c208324e29166a153736e2dd0a619781609a8b94e52fcf0ba5f4c4cb8f4471cdaa7530737521b06f1251d466144c2d03,q=0xf79f1bc68ff0853731fcdf48c726fcd0fd7d67787865d1022d3e6ae51b26db9486307c77040f44229c772b392c9f98a9028bfbc3cc71966511d89a947ae0d87ea8fccfcc3d67a426d8179e5dacac5648c208324e29166a153736e2dd0a619781609a8b94e52fcf0ba5f4c4cb8f4471cdaa7530737521b06f1251d466144c2d02,g=0xb),n_a=FYCZykMZesQ066+DkZEHu2smxoE=,id_b=bob,y_a=0xae951c5ed792440b60b652c4702e4e467f60ee9cb795176b1d5ae37d0bf6d97b8827da613ebbaaaa28ce00b290b0fdafa3fc2e44cd901762c820cbae4789591df4ade78b8d3b4afbfea8f4c3431e8a3fd1a19ff395c61ac191a135748f65fe6f814f86fbd7acd8cdb06ad6789a9ce1f10c73f55405886e031a3ccff19758482b,cert_a=(MTM-Cert-1:ca=(Rabin-1:Pub,n=0x4eae475af9b4f1b3093cdbaeee283868b0b1cfad53bea447583812fd41321b7bfe231856d63a38fc70bf8ac38bb8d3090f1db6c12971f3ad6b5f229ac9c31c753a16fdce1f31e669a71f4933409917c620335b009c22d54ac348adbbd69236fcc349c04e3b720473485b8672f83f7ea14713c02462ae4ce26a5564a1e547ea15),id=alice,pk=(Rabin-1:Pub,n=0x198508f853035f265636b766c70a450f94c14684d89ba5f3140a1a2e5478040565ad287510bc8e538fb4293c36a0c59193f46961ecd6d88976349a899bf2344eed66cae35a8e8eaa8e671c49a8639cb9c27ab2b65d10aa56702bcd159d8f8192e9ec3c5cf96a4b2b799042c6f0a012103ffe6295c8b6cfd242c35f794d9e950d),issued=Wed May 11 00:23:26 2011,expires=Fri Jun 10 00:23:26 2011,sig=0x6d5b35d8d77477ba2e9ebec3e86d2cec7902d22a36159d43bba17e1a862bff7678d1880a5b7ca94dc6af7a60275fa192158ac9d9ccc606912de7f9254b57173cf0f5ffac318632b5de7f0de2e619d8b08db9783a3d4ae34ec2b9e5f42c96bfa99f0c67fa4844ebb572d05dd0fc958dd5bd0d9ad830e18a2f11768b11133d5a9),sig_a=0x737c7d961c5ce7fe8d52353cb98fd5a7381033059b2d49366059c3d11be03b6e3190010d69dd41ae7daa5564b3f81a5cca2d9aad7c51b53d3bdad3326d4616373decae973592f337f43f291e334e8faa94c4de79713a708bdca50e8252349aab4b08536bd4d027827c5e5b26957c7bdc2aa7081fc1a9f043ab40a321e7845dc
+
+Received from Bob:
+==================
+MTM-Flow2-1:n_a=FYCZykMZesQ066+DkZEHu2smxoE=,n_b=Xnk6lv2anLBh/pNe+UyPNQN3vh4=,id_a=alice,y_b=0xa07c7996e027931b788ee808e042601a2542fc2160a8426950785396792c9641f96f9973e3f427cd7c31ee76bee2deb76c391e7ab9d85fea82241d4c7318f13c44c9bae4b927275e4d6e7e701529b2fef7a94967a546bfd11fd6a1ce13afa0351242c9db9dc94779f870ffb749ad05dbfa7a3bd9d91ca723ec14c6bc29b844cc,cert_b=(MTM-Cert-1:ca=(Rabin-1:Pub,n=0x4eae475af9b4f1b3093cdbaeee283868b0b1cfad53bea447583812fd41321b7bfe231856d63a38fc70bf8ac38bb8d3090f1db6c12971f3ad6b5f229ac9c31c753a16fdce1f31e669a71f4933409917c620335b009c22d54ac348adbbd69236fcc349c04e3b720473485b8672f83f7ea14713c02462ae4ce26a5564a1e547ea15),id=bob,pk=(Rabin-1:Pub,n=0x1003f050c0764f67b7cbcf8b36ae58aa3564b86795b49b632e88541086727bb49920013b362ce185c83a87a2b06c855c772b133b15ad0d9d7d4c3410c49c9e1fa96bea7beaa7354916c59fc524542db7883778caba70360168008421ae0c69e3ccaa457d63ad62643902647220e1c9dc40d1c49b796a9256e0a166d09f16f01d),issued=Wed May 11 00:23:26 2011,expires=Fri Jun 10 00:23:26 2011,sig=0x134ee7aa2c4c97bcd845249e65f79a5f800690d4fe3d6829d6433bf998f5914cc13fa6dc4c59bd14535822e40a7328fb171283c33d8d7d8b9e402f77270a669f2ba3870e09b15573aee3ab68106f8342f166c966cc7e9d91172f9e94e8f2fffbfa9aee76d8ba9ecd8ce7073d7db90be9daa555ce7b5ee46ebee55d01e328f756),sig_b=0x32bcaef2a9ee43380df8cf7bb7c469eee301834898add77539cdb8b81a025f6240d21915e708399bc95d61284444b0c51db0cb0609afe6cdcbc511d34c3fdc8246881e44f0bead3440878cadf22c3f4f24042438f716b245ba2d34421752db69751037008de8702fec80174d7f7960754fcfa931101d8537bb857991d7b8236
+
+Sent to Alice:
+==============
+MTM-Flow2-1:n_a=FYCZykMZesQ066+DkZEHu2smxoE=,n_b=Xnk6lv2anLBh/pNe+UyPNQN3vh4=,id_a=alice,y_b=0xae951c5ed792440b60b652c4702e4e467f60ee9cb795176b1d5ae37d0bf6d97b8827da613ebbaaaa28ce00b290b0fdafa3fc2e44cd901762c820cbae4789591df4ade78b8d3b4afbfea8f4c3431e8a3fd1a19ff395c61ac191a135748f65fe6f814f86fbd7acd8cdb06ad6789a9ce1f10c73f55405886e031a3ccff19758482b,cert_b=(MTM-Cert-1:ca=(Rabin-1:Pub,n=0x4eae475af9b4f1b3093cdbaeee283868b0b1cfad53bea447583812fd41321b7bfe231856d63a38fc70bf8ac38bb8d3090f1db6c12971f3ad6b5f229ac9c31c753a16fdce1f31e669a71f4933409917c620335b009c22d54ac348adbbd69236fcc349c04e3b720473485b8672f83f7ea14713c02462ae4ce26a5564a1e547ea15),id=bob,pk=(Rabin-1:Pub,n=0x1003f050c0764f67b7cbcf8b36ae58aa3564b86795b49b632e88541086727bb49920013b362ce185c83a87a2b06c855c772b133b15ad0d9d7d4c3410c49c9e1fa96bea7beaa7354916c59fc524542db7883778caba70360168008421ae0c69e3ccaa457d63ad62643902647220e1c9dc40d1c49b796a9256e0a166d09f16f01d),issued=Wed May 11 00:23:26 2011,expires=Fri Jun 10 00:23:26 2011,sig=0x134ee7aa2c4c97bcd845249e65f79a5f800690d4fe3d6829d6433bf998f5914cc13fa6dc4c59bd14535822e40a7328fb171283c33d8d7d8b9e402f77270a669f2ba3870e09b15573aee3ab68106f8342f166c966cc7e9d91172f9e94e8f2fffbfa9aee76d8ba9ecd8ce7073d7db90be9daa555ce7b5ee46ebee55d01e328f756),sig_b=0x32bcaef2a9ee43380df8cf7bb7c469eee301834898add77539cdb8b81a025f6240d21915e708399bc95d61284444b0c51db0cb0609afe6cdcbc511d34c3fdc8246881e44f0bead3440878cadf22c3f4f24042438f716b245ba2d34421752db69751037008de8702fec80174d7f7960754fcfa931101d8537bb857991d7b8236
+
+Received from Alice:
+====================
+vFqz7R9vBOSv+sfMU48ZjA==
+
+Sent to Bob:
+============
+Z6y9kaOKRCRAYjIgBI5CKA==
+
+Successful man-in-the-middle attack!
+Recovered secret was: 0xe398ea8db065f37b53a414b0c5fc0b70
+
+]0;carl@Duvel: ~/ComputerSecurity/git/Computer-Security/MIM-Attackcarl@Duvel:~/ComputerSecurity/git/Computer-Security/MIM-Attack$ exit
+
+Script done on Wed 11 May 2011 12:23:30 AM EDT

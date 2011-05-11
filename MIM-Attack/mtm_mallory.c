@@ -29,7 +29,6 @@ attack (int s, const char *msg)
    char *payload = NULL;
    char *res = NULL;
    static mpz_t y_m;
-   static mpz_t elem_m;
    static u_char am[sha1_hashsize];
    static u_char bm[sha1_hashsize];
    char *y_a_pos = NULL, *y_b_pos = NULL, *cert = NULL;
