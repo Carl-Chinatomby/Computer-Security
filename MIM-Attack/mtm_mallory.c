@@ -1,3 +1,7 @@
+/************************************
+ * BY CARL CHINATOMBY
+ * ***********************************/
+
 #include "mtm.h"
 
 enum {FirstStage = 0, SecondStage, LastStage};
@@ -31,7 +35,6 @@ attack (int s, const char *msg)
    char *y_a_pos = NULL, *y_b_pos = NULL, *cert = NULL;
    char *altered_msg = NULL;  
    char *altered_msg2 = NULL;
-   char *signed_port = NULL;
    size_t cpylen = 0;
    altered_msg = (char*) xmalloc((strlen(msg)+aes_blocklen) *sizeof(char));
      
@@ -89,9 +92,8 @@ attack (int s, const char *msg)
      derive_key(am, from_a, m_from_b);     
      derive_key(bm, m_from_a, from_b);
      
-     res = xstrdup (altered_msg); 
-    
-      break;
+     res = xstrdup (altered_msg);     
+     break;
   case LastStage:
      payload = NULL; 
      state = NULL;
@@ -221,7 +223,7 @@ main (int argc, char **argv)
    */
 
    write_chunk(fd_out, pretty_secret, strlen(pretty_secret));
-   write_chunk(fd_out,"\n", 1);
+   write_chunk(fd_out,"\n", strlen("\n"));
 
   return 0;
 }
