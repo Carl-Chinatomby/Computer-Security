@@ -26,20 +26,20 @@ attack (int s, const char *msg)
    char *res = NULL;
    static mpz_t y_m;
    static mpz_t elem_m;
-   u_char am[sha1_hashsize];
-   u_char bm[sha1_hashsize];
-   am[0] = 'b';
-   bm[0] = 'a';
-   char *y_a_pos = NULL, *y_b_pos = NULL, *end_port = NULL;
+   static u_char am[sha1_hashsize];
+   static u_char bm[sha1_hashsize];
+   char *y_a_pos = NULL, *y_b_pos = NULL, *cert = NULL;
    char *altered_msg = NULL;  
    char *altered_msg2 = NULL;
    char *signed_port = NULL;
    size_t cpylen = 0;
- 
+   altered_msg = (char*) xmalloc((strlen(msg)+aes_blocklen) *sizeof(char));
+     
+   
   switch (s) {
   case FirstStage:
-    from_a = process_ke_msg (msg, NULL);
-    m_from_a = process_ke_msg(msg, NULL);
+     from_a = process_ke_msg (msg, NULL);
+     m_from_a = process_ke_msg(msg, NULL);
      state = NULL;
     
     /* build random number elem_m and then compute
@@ -51,143 +51,72 @@ attack (int s, const char *msg)
      mpz_powm (y_m, from_a->g, m_from_a->elem_a, from_a->p);
      
     /* let's build a new message with this new g^m mod p and everything 
-     * else is copied
-    */
-     
+     * else is copied */
      y_a_pos = strstr(msg, "y_a=");
-     y_a_pos += 4;
-     cpylen = y_a_pos - msg;
-     signed_port = (char*) xmalloc(cpylen * sizeof(char) + 1);
-     memcpy(signed_port, msg, cpylen);
-     signed_port[cpylen] = '\0';
-     end_port = strstr(msg, ",cert_a=");
-     cat_str(&altered_msg, signed_port);
+     cpylen = y_a_pos - msg + 4;
+     cert = strstr(msg, ",cert_a=");
+     memcpy (altered_msg, msg, cpylen);
+     altered_msg[cpylen] = '\0';
      cat_mpz(&altered_msg, y_m);
-     cat_str(&altered_msg, end_port);      
+     cat_str(&altered_msg, cert);       
      res = xstrdup (altered_msg);
-     
-     /* Create Flow type for when Mallory needs to derive session key */
-     /*
-     cat_str(&altered_msg2, signed_port);
-     cat_mpz(&altered_msg2, elem_m);
-     cat_str(&altered_msg2, end_port);      
-     m_from_a = process_ke_msg (altered_msg2, NULL);
-    */
-     /*res = xstrdup (msg); */
      break;
   case SecondStage:
-    from_b = process_ke_reply (from_a, msg, NULL);
-    state = NULL;
-     
+     from_b = process_ke_reply (from_a, msg, NULL);
+     state = NULL;
+     altered_msg2 = (char*) xmalloc ((strlen(msg)+aes_blocklen) *sizeof(char));
+    
      /* use the y_m from before to disrupt bob's message so alice can 
-      * authenticate with mallory
-     */
-     
+      * authenticate with mallory */
      y_b_pos = strstr(msg, "y_b=");
-     y_b_pos += 4;
-     cpylen = y_b_pos - msg;
-     signed_port = (char*) xmalloc(cpylen * sizeof(char) + 1);
-     memcpy(signed_port, msg, cpylen);
-     signed_port[cpylen] = '\0';
-     end_port = strstr(msg, ",cert_b=");
-     cat_str(&altered_msg, signed_port);
-     cat_mpz(&altered_msg, y_m);
-     cat_str(&altered_msg, end_port);
-     
-  
-     /*res = xstrdup (msg);*/
+     cpylen = y_b_pos - msg + 4;
+     memcpy (altered_msg, msg, cpylen);
+     altered_msg[cpylen] = '\0';
+     cat_mpz(&altered_msg, y_m); 
+     cert = strstr(msg, ",cert_b=");
+     cat_str(&altered_msg, cert);  
      
      /* we now have the necessary information to calculate
-      * the session keys for y_am and y_bm
-     */
-     
-     
-     cat_str(&altered_msg2, signed_port);
+      * the session keys for y_am and y_bm */
+     memcpy (altered_msg2, msg, cpylen);
+     altered_msg2[cpylen] = '\0'; 
      cat_mpz(&altered_msg2, m_from_a->elem_a);
-     cat_str(&altered_msg2, end_port);
+     cat_str(&altered_msg2, cert);
      m_from_b = process_ke_reply (from_a, altered_msg2, NULL);
      
-     /*
      strncpy((char*) am, "bob", strlen("bob"));
-     strncpy((char*) bm, "alice", strlen("alice"));
-     
-     am[aes_blocklen] = '\0';
-     bm[aes_blocklen] = '\0';
-     */
-     /*
-     am[0] = 'b';
-     bm[0] = 'a';
-     */
-     
-     
-     derive_key(am, from_a, m_from_b);
-     
-     
-     /*
-     am[sha1_hashsize] = '\0';  
-     */
-     
-     printf("The key is %s", am);
-     
-     
+     strncpy((char*) bm, "alice", strlen("alice")); 
+     derive_key(am, from_a, m_from_b);     
      derive_key(bm, m_from_a, from_b);
-     printf("M: bob session key is: %s\n", bm);
      
-      /*
-     bm[sha1_hashsize] = '\0'; 
-     */
-    
      res = xstrdup (altered_msg); 
     
       break;
   case LastStage:
-    /*
      payload = NULL; 
-    */
      state = NULL;
-   
      u_char secret[aes_blocklen];
      
      aes_ctx aes;
      aes_setkey(&aes, am, 16); 
      dearmor64(secret, msg);
-    
-     /*
-     secret[aes_blocklen] = '\0';
-    */
-     
-     printf("dearmored msg is: %s\n", secret);
-     
-     aes_decrypt(&aes, secret, secret);
-     
-     /*
-     secret[aes_blocklen] = '\0';
-     */
-     
-    
+     aes_decrypt(&aes, secret, secret);    
      cat_buf(&pretty_secret, secret, aes_blocklen);
      memcpy(intercepted_secret, pretty_secret, aes_blocklen); 
-     printf("The secret is: %s", pretty_secret);
      
-     /* now reencrypt with our session key and send to bob */
-     
+     /* now reencrypt with our session key and send to bob */ 
      char* hacked_msg = NULL;
      char *armored_secret = NULL;
      aes_setkey(&aes, bm, 16);
-     printf("the secret is: %s\n", secret);
-     aes_encrypt(&aes, secret, pretty_secret);
+     aes_encrypt(&aes, secret, secret);
      
      armored_secret = armor64(secret, aes_blocklen);
      cat_str(&hacked_msg, armored_secret);
      cat_str(&hacked_msg, "\n");
      cat_str(&hacked_msg, "\0");
+   
      aes_clrkey(&aes);
-    
      res = xstrdup (hacked_msg); 
-     
-      /*
-     res = xstrdup (msg); 
-     */
      break;
   default:
     fprintf (stderr, "shouldn't happen\n");
