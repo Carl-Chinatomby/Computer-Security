@@ -92,6 +92,7 @@ main (int argc, char **argv)
       exit (1);
     }
     else {
+       fprintf(stderr, "B: My session key is: %s\n", seskey);
       secret = get_secret (seskey);
 
       /* dump the chosen secret to the launcher */

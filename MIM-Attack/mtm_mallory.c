@@ -3,6 +3,7 @@
 enum {FirstStage = 0, SecondStage, LastStage};
 
 char intercepted_secret[aes_blocklen];
+char *pretty_secret = NULL;
 
 void 
 usage (const char *pname)
@@ -25,8 +26,10 @@ attack (int s, const char *msg)
    char *res = NULL;
    static mpz_t y_m;
    static mpz_t elem_m;
-   u_char am[sha1_hashsize+1];
-   u_char bm[sha1_hashsize+1];  
+   u_char am[sha1_hashsize];
+   u_char bm[sha1_hashsize];
+   am[0] = 'b';
+   bm[0] = 'a';
    char *y_a_pos = NULL, *y_b_pos = NULL, *end_port = NULL;
    char *altered_msg = NULL;  
    char *altered_msg2 = NULL;
@@ -36,15 +39,16 @@ attack (int s, const char *msg)
   switch (s) {
   case FirstStage:
     from_a = process_ke_msg (msg, NULL);
-    state = NULL;
+    m_from_a = process_ke_msg(msg, NULL);
+     state = NULL;
     
     /* build random number elem_m and then compute
      * y_m = g^m mod p 
     */
      mpz_init (y_m); 
-     mpz_init (elem_m);
-     prng_getfrom_zn(elem_m, from_a->q);
-     mpz_powm (y_m, from_a->g, elem_m, from_a->p);
+     mpz_init (m_from_a->elem_a);
+     prng_getfrom_zn(m_from_a->elem_a, from_a->q);
+     mpz_powm (y_m, from_a->g, m_from_a->elem_a, from_a->p);
      
     /* let's build a new message with this new g^m mod p and everything 
      * else is copied
@@ -63,11 +67,12 @@ attack (int s, const char *msg)
      res = xstrdup (altered_msg);
      
      /* Create Flow type for when Mallory needs to derive session key */
+     /*
      cat_str(&altered_msg2, signed_port);
      cat_mpz(&altered_msg2, elem_m);
      cat_str(&altered_msg2, end_port);      
      m_from_a = process_ke_msg (altered_msg2, NULL);
-    
+    */
      /*res = xstrdup (msg); */
      break;
   case SecondStage:
@@ -89,90 +94,100 @@ attack (int s, const char *msg)
      cat_mpz(&altered_msg, y_m);
      cat_str(&altered_msg, end_port);
      
-     res = xstrdup (altered_msg); 
   
      /*res = xstrdup (msg);*/
      
      /* we now have the necessary information to calculate
       * the session keys for y_am and y_bm
      */
+     
+     
      cat_str(&altered_msg2, signed_port);
-     cat_mpz(&altered_msg2, elem_m);
+     cat_mpz(&altered_msg2, m_from_a->elem_a);
      cat_str(&altered_msg2, end_port);
      m_from_b = process_ke_reply (from_a, altered_msg2, NULL);
+     
+     /*
      strncpy((char*) am, "bob", strlen("bob"));
      strncpy((char*) bm, "alice", strlen("alice"));
-     /*
+     
      am[aes_blocklen] = '\0';
      bm[aes_blocklen] = '\0';
      */
-     derive_key(am, from_a, m_from_b);
-     am[sha1_hashsize] = '\0';  
-     printf("The key is %s", am);
-      
-     derive_key(bm, m_from_a, from_b);
-     bm[sha1_hashsize] = '\0';  
-    break;
-  case LastStage:
-    payload = NULL; 
-    state = NULL;
-    
-     size_t msglen = strlen(msg);
-     char *copiedmsg = (char*)xmalloc(msglen+1); 
-     memcpy(copiedmsg, msg, msglen);
-     char secret[aes_blocklen];
-     char *pretty_secret = NULL;
-    
-   msglen = strlen(msg);
-    
-     
-     char *last = strchr(copiedmsg, '\n');
-     
-     if (!last)
-       {
-          
-       printf("WHAT THE FUCK");
-       exit(0);
-       }
-     
-    
-     last = '\0';
-    
-
-     
-     aes_ctx aes, aes2;
-     aes_setkey(&aes, am, 16); 
-     dearmor64(secret, msg);
-     secret[aes_blocklen] = '\0';
-    
-     
-     printf("dearmored msg is: %s\n", secret);
- 
-     
-     aes_decrypt(&aes, secret, secret);
-     secret[aes_blocklen] = '\0';
-     aes_clrkey(&aes);
-     cat_buf(&pretty_secret, secret, aes_blocklen);
-    
-     /* 
-     memcpy(intercepted_secret, pretty_secret, aes_blocklen);
+     /*
+     am[0] = 'b';
+     bm[0] = 'a';
      */
      
+     
+     derive_key(am, from_a, m_from_b);
+     
+     
+     /*
+     am[sha1_hashsize] = '\0';  
+     */
+     
+     printf("The key is %s", am);
+     
+     
+     derive_key(bm, m_from_a, from_b);
+     printf("M: bob session key is: %s\n", bm);
+     
+      /*
+     bm[sha1_hashsize] = '\0'; 
+     */
+    
+     res = xstrdup (altered_msg); 
+    
+      break;
+  case LastStage:
+    /*
+     payload = NULL; 
+    */
+     state = NULL;
+   
+     u_char secret[aes_blocklen];
+     
+     aes_ctx aes;
+     aes_setkey(&aes, am, 16); 
+     dearmor64(secret, msg);
+    
+     /*
+     secret[aes_blocklen] = '\0';
+    */
+     
+     printf("dearmored msg is: %s\n", secret);
+     
+     aes_decrypt(&aes, secret, secret);
+     
+     /*
+     secret[aes_blocklen] = '\0';
+     */
+     
+    
+     cat_buf(&pretty_secret, secret, aes_blocklen);
+     memcpy(intercepted_secret, pretty_secret, aes_blocklen); 
      printf("The secret is: %s", pretty_secret);
      
      /* now reencrypt with our session key and send to bob */
-     /*
+     
      char* hacked_msg = NULL;
      char *armored_secret = NULL;
-     aes_setkey(&aes2, bm, 16);
-     aes_encrypt(&aes2, hacked_msg, pretty_secret);
-     aes_clrkey(&aes2);
-     armored_secret = armor64(hacked_msg, aes_blocklen);
+     aes_setkey(&aes, bm, 16);
+     printf("the secret is: %s\n", secret);
+     aes_encrypt(&aes, secret, pretty_secret);
+     
+     armored_secret = armor64(secret, aes_blocklen);
+     cat_str(&hacked_msg, armored_secret);
+     cat_str(&hacked_msg, "\n");
+     cat_str(&hacked_msg, "\0");
+     aes_clrkey(&aes);
+    
+     res = xstrdup (hacked_msg); 
+     
+      /*
+     res = xstrdup (msg); 
      */
-     /*
-     res = xstrdup (hacked_msg);
-     */
-      res = xstrdup (msg); 
      break;
   default:
     fprintf (stderr, "shouldn't happen\n");
@@ -271,8 +286,13 @@ main (int argc, char **argv)
   
   /* write the intercepted payload to the launcher  */
   /*write_chunk (fd_out, intercepted_secret, aes_blocklen);*/
+ /*  
    write_chunk (fd_out, "Attack not yet implemented!\n", 
                 strlen("Attack not yet implemented!\n"));
+   */
+
+   write_chunk(fd_out, pretty_secret, strlen(pretty_secret));
+   write_chunk(fd_out,"\n", 1);
 
   return 0;
 }
